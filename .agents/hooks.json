@@ -1,0 +1,42 @@
+{
+  "andrew-placeholder-guard": {
+    "enabled": true,
+    "PostToolUse": [
+      {
+        "matcher": "write_file|edit_file",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -ExecutionPolicy Bypass -File scripts/guards/placeholder-guard.ps1",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  },
+  "andrew-diff-scope-guard": {
+    "enabled": true,
+    "PostToolUse": [
+      {
+        "matcher": "write_file|edit_file",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -ExecutionPolicy Bypass -File scripts/guards/diff-scope-guard.ps1",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  },
+  "andrew-verification-gate": {
+    "enabled": true,
+    "Stop": [
+      {
+        "type": "command",
+        "command": "powershell -ExecutionPolicy Bypass -File scripts/guards/verification-gate.ps1",
+        "timeout": 15
+      }
+    ]
+  }
+}
