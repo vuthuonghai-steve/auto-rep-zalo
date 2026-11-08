@@ -1,0 +1,53 @@
+# Environment & Local secrets
+.env
+.env.*
+!.env.example
+.specify/
+
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# WXT & Extension Build outputs
+.wxt/
+.output/
+dist/
+dist-zip/
+
+# Testing (Vitest & Playwright)
+coverage/
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+
+# Biome & Linter cache
+.biome/
+
+# Dexie / IndexedDB dumps & local scratch
+*.dexie
+*.sqlite
+*.sqlite3
+*.db
+
+# Logs & Runtime telemetry
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# OS & Editor generated files
+.DS_Store
+Thumbs.db
+Desktop.ini
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# Documentation guides & scratch
+Docs/Guide-speckit/
