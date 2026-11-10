@@ -1,93 +1,102 @@
-Để giúp bạn có cơ sở kỹ thuật vững chắc tự thẩm định, so sánh và lựa chọn nền tảng/framework phát triển Extension phù hợp nhất với dự án **Zalo Personal Automation (24/7)**, dưới đây là **Bộ Yêu Cầu & Hệ Tiêu Chí Đánh Giá Kỹ Thuật (Extension Toolchain Evaluation Matrix)** được xây dựng trực tiếp từ các ràng buộc vận hành khắt khe của dự án.
+Tệp cấu hình custom agent trong [Google Antigravity](https://antigravity.google/docs/subagents/) là một tệp Markdown (`.md`) duy nhất kết hợp giữa **YAML Frontmatter** (siêu dữ liệu, quyền hạn và chính sách thực thi) và **Markdown Body** (chỉ thị hệ thống - System Prompt).
 
 ---
 
-# BỘ TIÊU CHÍ ĐÁNH GIÁ & LỰA CHỌN FRAMEWORK PHÁT TRIỂN CHROME EXTENSION
+### 1. Trọn bộ thuộc tính cấu hình trong YAML Frontmatter
 
-Ngôn ngữ ưu tiên: **TypeScript / JavaScript**  
-Kiến trúc đích: **Chromium Extension Manifest V3**  
-Đặc thù dự án: **Heavy Content Script** (90% logic can thiệp DOM Zalo Web & Dexie.js), **Keep-Alive 24/7**, và **Injected Floating UI**.
+Phần Frontmatter nằm ở đầu tệp, giới hạn giữa cặp dấu `---`. Bảng dưới đây liệt kê đầy đủ các thuộc tính được hỗ trợ:
 
----
-
-## I. NHÓM TIÊU CHÍ 1: TƯƠNG THÍCH MANIFEST V3 & CHÍNH SÁCH BẢO MẬT (MV3 & CSP COMPLIANCE)
-
-*Trọng số: 25% — Tiêu chí sinh tử (Hard Constraint)*
-
-| Mã | Tên Tiêu Chí | Mô Tả & Ràng Buộc Của Dự Án | Cách Kiểm Chứng (Verification Method) |
-| :--- | :--- | :--- | :--- |
-| **C1.1** | **Hỗ trợ Native Manifest V3** | Nền tảng phải tự động sinh file `manifest.json` theo chuẩn MV3 (sử dụng `service_worker` cho background thay vì `scripts` nền của MV2). | Kiểm tra output build xem có khai báo `background.service_worker` hợp lệ không. |
-| **C1.2** | **Không vi phạm CSP (Content Security Policy)** | Chrome MV3 **cấm tuyệt đối** việc sử dụng `eval()`, `new Function()`, và script nội tuyến (inline scripts) trong extension pages. Nền tảng khi build production không được chèn code vi phạm CSP. | Chạy thử extension trên Chrome Canary/Brave; kiểm tra Console xem có cảnh báo vi phạm CSP không. |
-| **C1.3** | **Quản lý đa ngữ cảnh (Context Routing)** | Phân tách rạch ròi quá trình biên dịch (bundle) cho 4 ngữ cảnh độc lập: Background Worker, Content Script, Options Page, và Injected Script. Không bị rò rỉ mã nguồn từ ngữ cảnh này sang ngữ cảnh khác. | Kiểm tra các file đầu ra trong thư mục `dist/`: mỗi entry point phải là một bundle cô lập. |
-
----
-
-## II. NHÓM TIÊU CHÍ 2: NĂNG LỰC HỖ TRỢ CONTENT SCRIPT & INJECTED UI
-
-*Trọng số: 25% — Trọng tâm nghiệp vụ của dự án*
-
-Dự án này có **90% nghiệp vụ chạy trong Content Script** (can thiệp DOM React 18 của Zalo và render Floating Control Panel).
-
-| Mã | Tên Tiêu Chí | Mô Tả & Ràng Buộc Của Dự Án | Cách Kiểm Chứng (Verification Method) |
-| :--- | :--- | :--- | :--- |
-| **C2.1** | **Cô lập CSS qua Shadow DOM (UI Style Isolation)** | Thanh điều khiển nổi (Floating Widget) được chèn trực tiếp vào trang `chat.zalo.me`. Framework phải hỗ trợ inject component kèm style vào **Shadow DOM** để CSS của Zalo không làm vỡ UI Extension và CSS Extension không ảnh hưởng Zalo. | Thử tạo 1 component UI nổi; kiểm tra xem framework có hỗ trợ tự động bọc trong Shadow Root (`attachShadow({ mode: 'open' })`) hay không. |
-| **C2.2** | **Tương thích IndexedDB (Dexie.js) tại Content Script** | Dexie.js và Web Workers phải hoạt động mượt mà trong ngữ cảnh Content Script mà không gặp lỗi phân giải module (Module resolution) hay thiếu polyfill của trình duyệt. | Import Dexie vào Content Script, mở DB và thực hiện thao tác CRUD cơ bản trên `chat.zalo.me`. |
-| **C2.3** | **Tách biệt Execution Worlds (Isolated vs Main World)** | Dự án cần chạy mặc định trong `ISOLATED world`, nhưng khi cần có thể linh hoạt inject script vào `MAIN world` để can thiệp React Fiber props. Nền tảng phải hỗ trợ cấu hình `world: "MAIN" | "ISOLATED"` dễ dàng. | Kiểm tra cấu hình entrypoint content script có cho phép khai báo thuộc tính `world` theo chuẩn MV3 không. |
+| Thuộc tính | Kiểu dữ liệu | Mặc định | Giá trị hợp lệ | Chức năng & Bài toán đảm nhiệm |
+| --- | --- | --- | --- | --- |
+| `name` | string | *(Bắt buộc)* | Tên định danh (kebab-case) | Xác định định danh duy nhất của agent khi gọi lệnh, hiển thị trong danh sách UI hoặc dùng trong cú pháp `@<name>`. |
+| `description` | string | *(Bắt buộc)* | Chuỗi văn bản mô tả | Cung cấp thông tin nghiệp vụ để Planner/Parent Agent đọc hiểu và tự động ủy quyền công việc qua `invoke_subagent`. |
+| `tools` | string[] | `[]` | Danh sách tên công cụ | Giới hạn quyền gọi công cụ (tool allowlist). Giúp thu hẹp ngữ cảnh, chống ảo giác công cụ và tránh việc agent vô tình gọi các thao tác phá hoại. |
+| `mainAgent` | boolean | `true` | `true`, `false` | Quyết định agent có thể chạy độc lập như phiên làm việc chính hay không (chọn trên dropdown của IDE Side Panel, App, hoặc CLI `agy --agent <name>`). |
+| `subagent` | boolean | `true` | `true`, `false` | Cho phép agent được gọi làm worker chạy ngầm bởi agent khác thông qua tool `invoke_subagent`. |
+| `model` | string | `inherit` | `inherit`, `flash`, `pro` | Điều phối năng lực tính toán và chi phí: `flash` (tốc độ cao, chi phí thấp cho linting/format), `pro` (suy luận sâu cho kiến trúc/bảo mật), `inherit` (dùng model theo phiên cha). |
+| `commandExecutionPolicy` | string | `sandbox` | `off`, `auto`, `eager`, `sandbox` | Kiểm soát mức độ tự động chạy lệnh shell trong [Terminal Sandbox](https://antigravity.google/docs/agent-settings/): `auto` (chạy ngầm các lệnh an toàn như test/build, chỉ hỏi khi có lệnh nguy hiểm), `sandbox` (cách ly OS container), `off` (hỏi mọi lệnh), `eager` (chạy thẳng không hỏi). |
+| `permissionMode` | string | `request-review` | `request-review`, `strict`, `proceed-in-sandbox`, `always-proceed` | Thiết lập hạn mức kiểm duyệt chung cho mọi thao tác chỉnh sửa tệp hoặc gọi tài nguyên nhạy cảm. |
+| `skills` | string[] | `[]` | Mảng đường dẫn thư mục skill | Nạp các gói quy trình nghiệp vụ chuyên biệt (ví dụ: `skills/db-migration`) theo cơ chế progressive discovery mà không làm tràn context window. |
+| `plugins` | string[] | `[]` | Mảng tên plugin | Khai báo các plugin phụ thuộc cần nạp cùng với agent. |
+| `mcpServers` | object[] | `[]` | Mảng cấu hình MCP server | Kết nối trực tiếp với các máy chủ Model Context Protocol (stdio hoặc remote SSE) để bổ sung công cụ ngoài. |
 
 ---
 
-## III. NHÓM TIÊU CHÍ 3: TRẢI NGHIỆM PHÁT TRIỂN & CƠ CHẾ HOT RELOAD (DEVELOPER EXPERIENCE & HMR)
+### 2. Danh mục các hàm & công cụ (`tools`) được cấp phát
 
-*Trọng số: 20% — Ảnh hưởng trực tiếp đến tốc độ và độ tin cậy khi debug*
+Khi khai báo mảng `tools:`, bạn có thể chỉ định chính xác các công cụ tích hợp sẵn theo từng nhóm nhiệm vụ được tài liệu [Google Antigravity Hooks & Tools](https://antigravity.google/docs/hooks/) quy định:
 
-Lập trình Extension có đặc thù rất khó chịu: mỗi lần sửa code Content Script thường phải F5 lại trang web mục tiêu hoặc reload lại extension.
+#### Nhóm thao tác tệp và thư mục (Filesystem)
 
-| Mã | Tên Tiêu Chí | Mô Tả & Ràng Buộc Của Dự Án | Cách Kiểm Chứng (Verification Method) |
-| :--- | :--- | :--- | :--- |
-| **C3.1** | **Hot Module Replacement (HMR) cho Content Script** | Khi chỉnh sửa code trong Content Script, framework phải tự động cập nhật code mới vào tab `chat.zalo.me` đang mở mà không làm mất trạng thái đăng nhập hoặc bắt buộc phải reload extension thủ công. | Sửa 1 dòng log trong Content Script; kiểm tra xem trang Zalo Web có tự nhận log mới mà không cần F5 trình duyệt không. |
-| **C3.2** | **Tự động Reload Background Service Worker** | Khi sửa logic trong Background Worker (cơ chế Keep-Alive, Alarms), framework phải tự động hủy worker cũ và kích hoạt worker mới ngay lập tức. | Sửa file background; xem cờ reload trên giao diện `chrome://extensions` có tự nhảy không. |
-| **C3.3** | **Tốc độ Build / Dev Server** | Ưu tiên các nền tảng sử dụng engine build hiện đại (như **Vite / Rollup / esbuild**) thay vì các cấu hình Webpack cũ kỹ, cồng kềnh, thời gian khởi động lâu. | Đo thời gian `cold start` và thời gian rebuild khi save code (yêu cầu `< 500ms`). |
+* `view_file`: Đọc nội dung tệp với hỗ trợ cắt dòng (`StartLine`, `EndLine`), phục vụ việc phân tích code cục bộ.
+* `list_dir`: Liệt kê các tệp/thư mục con tại một đường dẫn xác định.
+* `find_by_name`: Quét tìm tệp theo mẫu glob pattern, loại tệp và phần mở rộng.
+* `grep_search`: Tìm kiếm từ khóa hoặc biểu thức chính quy (regex) xuyên suốt repository.
+* `write_to_file`: Tạo mới hoàn toàn một tệp hoặc ghi đè toàn bộ nội dung.
+* `replace_file_content`: Thay thế chính xác một khối văn bản liên tục trong tệp code.
+* `multi_replace_file_content`: Thực hiện nhiều đoạn chỉnh sửa không liên tục trên cùng một tệp cùng lúc để tối ưu thời gian phản hồi.
 
----
+#### Nhóm thực thi lệnh và quản lý tiến trình (Terminal & Execution)
 
-## IV. NHÓM TIÊU CHÍ 4: HỖ TRỢ TYPESCRIPT & TYPE SAFETY ĐA TIẾN TRÌNH
+* `run_command`: Đề xuất và thực thi lệnh shell/Bash (như chạy test, build, lint, git).
+* `manage_task`: Quản lý các tiến trình chạy ngầm dài hạn với các hành động `list`, `status`, `send_input`, hoặc `kill`.
+* `schedule`: Thiết lập hẹn giờ hoặc lên lịch cron job định kỳ chạy ngầm cho tác vụ giám sát.
 
-*Trọng số: 15% — Bảo đảm tính ổn định kiến trúc*
+#### Nhóm điều phối đa Agent (Multi-Agent Orchestration)
 
-| Mã | Tên Tiêu Chí | Mô Tả & Ràng Buộc Của Dự Án | Cách Kiểm Chứng (Verification Method) |
-| :--- | :--- | :--- | :--- |
-| **C4.1** | **TypeScript First-Class Support** | Hỗ trợ cấu hình TypeScript (`tsconfig.json`) nghiêm ngặt (Strict Mode), hỗ trợ Path Aliases (`@/core`, `@/storage`, `@/ui`) mà không cần cấu hình plugin phức tạp. | Tạo file `.ts`, khai báo type phức tạp và alias import; kiểm tra xem build có báo lỗi type chuẩn xác không. |
-| **C4.2** | **Type-Safe Message Passing (Truyền thông điệp có kiểu)** | Giao tiếp giữa Content Script, Background Worker và Options Page qua `chrome.runtime.sendMessage` hoặc `Port` rất dễ lỗi typo. Nền tảng có hỗ trợ sẵn hoặc dễ dàng tích hợp bộ định kiểu dữ liệu (Data Contract types) cho các message không? | Đánh giá mức độ thuận tiện khi viết một wrapper gửi nhận message có kiểm tra kiểu dữ liệu tĩnh. |
-| **C4.3** | **Auto-generated Manifest Types** | Type checking cho chính file cấu hình extension (Permissions, Host Permissions, Web Accessible Resources) để tránh sai sót cú pháp Manifest. | Đánh giá xem file config của framework có gợi ý code (IntelliSense) cho các quyền của Chrome API không. |
-
----
-
-## V. NHÓM TIÊU CHÍ 5: TÍNH TINH GỌN & KHÔNG GÂY LỆ THUỘC (PARSIMONY & ARCHITECTURAL FREEDOM)
-
-*Trọng số: 15% — Triết lý Andrew Principles (Radical Parsimony)*
-
-| Mã | Tên Tiêu Chí | Mô Tả & Ràng Buộc Của Dự Án | Cách Kiểm Chứng (Verification Method) |
-| :--- | :--- | :--- | :--- |
-| **C5.1** | **Kích thước Bundle gọn nhẹ (Zero Bloat)** | Mã nguồn được build ra không bị chèn các thư viện runtime thừa thãi từ framework, giữ dung lượng nhỏ và hạn chế tối đa độ trễ nạp script trên trang Zalo. | Kiểm tra dung lượng thư mục `dist/` sau khi build production cho một file `content.ts` trống. |
-| **C5.2** | **Không bị Vendor Lock-in (Tính độc lập cao)** | Cấu trúc code có dễ dàng di chuyển (migrate) sang một bundler khác (như Vite thuần hoặc Webpack thuần) nếu framework ngừng bảo trì trong tương lai không? | Xem code nghiệp vụ có bị phụ thuộc vào các decorator/hàm đặc thù chỉ framework đó mới có hay không. |
-| **C5.3** | **Tính tự do chọn UI Framework cho Options/Popup** | Nền tảng có cho phép tự do chọn công nghệ render UI (React, Vue, Svelte, hoặc Vanilla TS/HTML) cho trang Options/Popup mà không ép buộc một hệ sinh thái duy nhất không? | Kiểm tra tài liệu hỗ trợ đa framework UI của nền tảng. |
+* `invoke_subagent`: Khởi tạo và ủy quyền một tác vụ con sang subagent khác với không gian bộ nhớ (context window) hoàn toàn mới.
+* `ask_permission`: Gửi yêu cầu cấp thêm quyền thực thi đặc biệt đến người dùng khi gặp giới hạn an toàn.
+* `list_permissions`: Kiểm tra danh sách các quyền hiện tại đang được cấp trong phiên làm việc.
 
 ---
 
-## BẢNG TỔNG HỢP TRỌNG SỐ CHẤM ĐIỂM (EVALUATION SCORECARD)
+### 3. Cấu trúc phần thân Markdown (System Prompt)
 
-Bạn có thể sử dụng thang điểm từ **1 đến 5** cho từng tiêu chí để chấm điểm các ứng viên tiềm năng mà bạn tìm được:
+Phần nội dung bên dưới dấu `---` được biên dịch trực tiếp thành System Prompt của agent. Một cấu trúc chuẩn thường bao gồm 4 khối chỉ thị:
+
+1. **Role & Objective (`# Role & Objective`):** Khẳng định vai trò chuyên môn, ngữ cảnh dự án và mục tiêu cốt lõi.
+2. **Standard Workflow (`# Workflow`):** Trình bày quy trình giải quyết vấn đề tuần tự (ví dụ: Khảo sát mã nguồn -> Đề xuất kế hoạch -> Thực thi -> Chạy kiểm thử xác minh).
+3. **Guardrails & Constraints (`# Constraints`):** Các ranh giới cấm vượt qua (ví dụ: không được sửa trực tiếp file `.env`, không được commit code khi test chưa pass, không gọi lệnh ngoài sandbox).
+4. **Output Standards (`# Output Standards`):** Quy định định dạng báo cáo, cấu trúc tóm tắt hoặc mẫu checklist kết quả trả về cho Parent Agent hoặc lập trình viên.
+
+---
+
+### 4. Tệp mẫu cấu hình hoàn chỉnh (`api-tester.md`)
+
+Dưới đây là một tệp hoàn chỉnh thiết lập chuyên viên kiểm thử API, tối ưu cho môi trường lập trình:
+
+```markdown
+---
+name: api-tester
+description: Tự động phân tích endpoint, viết test case, chạy kiểm thử API và báo cáo hiệu năng.
+tools:
+  - view_file
+  - replace_file_content
+  - write_to_file
+  - grep_search
+  - run_command
+  - manage_task
+mainAgent: true
+subagent: true
+model: pro
+commandExecutionPolicy: auto
+permissionMode: request-review
+skills:
+  - skills/rest-standards
+---
+
+# Role & Objective
+Bạn là Kỹ sư Tự động hóa Kiểm thử API (API Automation Engineer). Mục tiêu chính là rà soát các route xử lý request, xây dựng kịch bản kiểm thử tích hợp (integration tests) và xác nhận tính toàn vẹn của dữ liệu đầu ra.
+
+# Operational Workflow
+1. Khảo sát route: Sử dụng `grep_search` và `view_file` để tìm kiếm controller, schemas, và middleware liên quan.
+2. Thiết kế kịch bản test: Viết kịch bản kiểm tra mã trạng thái HTTP, xác thực token, kiểm thử biên và kiểm thử lỗi validation.
+3. Tạo tệp kiểm thử: Dùng `write_to_file` để sinh mã kiểm thử vào thư mục `tests/api/`.
+4. Thực thi và khắc phục: Dùng `run_command` chạy test runner (ví dụ: `npm test` hoặc `pytest`). Nếu có lỗi phát sinh, dùng `replace_file_content` để hiệu chỉnh lại cho tới khi toàn bộ suite vượt qua kiểm thử thành công.
+
+# Constraints & Rules
+- Chỉ thực thi các lệnh chạy test và cài đặt phụ thuộc thông qua chính sách `auto`. Không chạy lệnh phá hủy cơ sở dữ liệu production.
+- Không hardcode chuỗi bí mật, token hoặc mật khẩu trong mã kiểm thử; luôn đọc qua biến môi trường giả lập (`.env.test`).
+- Phải đính kèm chi tiết mã trạng thái HTTP mong đợi và mã trạng thái thực tế trong mọi báo cáo kiểm thử.
 
 ```
-Tổng Điểm = (Điểm Nhóm 1 × 0.25) + (Điểm Nhóm 2 × 0.25) + (Điểm Nhóm 3 × 0.20) + (Điểm Nhóm 4 × 0.15) + (Điểm Nhóm 5 × 0.15)
-```
-
-| Nhóm Tiêu Chí | Trọng Số | Yêu Cầu Cốt Lõi Cho Dự Án Zalo Automation |
-| :--- | :---: | :--- |
-| **Nhóm 1: MV3 & CSP Compliance** | **25%** | Tự sinh `manifest.json` chuẩn MV3, không vi phạm CSP, cô lập 4 ngữ cảnh. |
-| **Nhóm 2: Content Script & Injected UI** | **25%** | Hỗ trợ Shadow DOM cho Floating Widget, tương thích Dexie.js, hỗ trợ Isolated/Main world. |
-| **Nhóm 3: DX & Hot Reload (HMR)** | **20%** | HMR mượt trên Content Script (không cần F5 Zalo), tự reload Background Worker. |
-| **Nhóm 4: TypeScript & Safety** | **15%** | TypeScript Strict Mode, Type-safe Message Passing, Path Aliases sạch sẽ. |
-| **Nhóm 5: Parsimony & Freedom** | **15%** | Bundle nhẹ, không runtime bloat, không khóa chặt kiến trúc (no lock-in). |
-
----
