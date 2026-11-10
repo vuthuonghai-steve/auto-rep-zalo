@@ -1,9 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  computeContentHash,
-  isHashMatch,
-  truncateHash,
-} from '../../src/utils/cryptoHasher';
+import { computeContentHash, isHashMatch, truncateHash } from '../../src/utils/cryptoHasher';
 
 describe('Surgical Crypto Hasher Utility (tests/unit/cryptoHasher.test.ts)', () => {
   describe('computeContentHash', () => {

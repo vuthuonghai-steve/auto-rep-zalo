@@ -28,7 +28,7 @@ export async function computeContentHash(content: string, salt = ''): Promise<st
 export async function isHashMatch(
   content: string,
   expectedHash: string,
-  salt = ''
+  salt = '',
 ): Promise<boolean> {
   if (!expectedHash || typeof expectedHash !== 'string') {
     return false;
