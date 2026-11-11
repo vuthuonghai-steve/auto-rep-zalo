@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="100%" height="100%">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0F172A"/>
+      <stop offset="100%" stop-color="#1E293B"/>
+    </linearGradient>
+
+    <!-- Top Left Module Gradient (Electric Cyan/Blue) -->
+    <linearGradient id="modBlue" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38BDF8"/>
+      <stop offset="100%" stop-color="#2563EB"/>
+    </linearGradient>
+
+    <!-- Top Right Module Gradient (Emerald Teal) -->
+    <linearGradient id="modGreen" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34D399"/>
+      <stop offset="100%" stop-color="#059669"/>
+    </linearGradient>
+
+    <!-- Bottom Wide Module Gradient (Violet/Indigo) -->
+    <linearGradient id="modIndigo" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#818CF8"/>
+      <stop offset="100%" stop-color="#4F46E5"/>
+    </linearGradient>
+
+    <!-- Subtle Outer Glow & Shadow -->
+    <filter id="cubeShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#000000" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+
+  <!-- Base Icon Container (Rounded Squircle Background for High Contrast) -->
+  <rect x="6" y="6" width="116" height="116" rx="28" ry="28" fill="url(#bgGrad)" stroke="#334155" stroke-width="2"/>
+
+  <!-- Module Group with Shadow Filter -->
+  <g filter="url(#cubeShadow)">
+    <!-- Top-Left Modular Block (Active Core) -->
+    <rect x="26" y="26" width="34" height="34" rx="10" ry="10" fill="url(#modBlue)"/>
+    <circle cx="43" cy="43" r="5" fill="#FFFFFF" fill-opacity="0.9"/>
+
+    <!-- Top-Right Modular Block (Data / Bridge) -->
+    <rect x="68" y="26" width="34" height="34" rx="10" ry="10" fill="url(#modGreen)"/>
+    <path d="M79 43h12" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round"/>
+    <path d="M85 37v12" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round"/>
+
+    <!-- Bottom Modular Unit (Anchor Base / Automation Engine) -->
+    <rect x="26" y="68" width="76" height="34" rx="10" ry="10" fill="url(#modIndigo)"/>
+    
+    <!-- Status Dots on Bottom Unit -->
+    <circle cx="43" cy="85" r="4" fill="#FFFFFF" fill-opacity="0.85"/>
+    <circle cx="59" cy="85" r="4" fill="#C7D2FE" fill-opacity="0.65"/>
+    <circle cx="75" cy="85" r="4" fill="#C7D2FE" fill-opacity="0.4"/>
+    <circle cx="91" cy="85" r="4" fill="#C7D2FE" fill-opacity="0.25"/>
+  </g>
+
+  <!-- Connective Micro-Indicator between Modules -->
+  <circle cx="64" cy="43" r="2.5" fill="#38BDF8"/>
+  <circle cx="43" cy="64" r="2.5" fill="#818CF8"/>
+  <circle cx="85" cy="64" r="2.5" fill="#34D399"/>
+</svg>
+

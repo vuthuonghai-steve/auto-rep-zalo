@@ -51,3 +51,5 @@ Desktop.ini
 
 # Documentation guides & scratch
 Docs/Guide-speckit/
+.codegraph
+specs
