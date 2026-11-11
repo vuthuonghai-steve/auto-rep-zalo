@@ -67,7 +67,7 @@ export function FloatingPanel() {
             class="text-gray-500 hover:text-gray-700 px-1 font-mono text-[10px]"
             title="Mở rộng / Thu gọn"
           >
-            {isExpanded.value ? '▲' : '▼'}
+            {isExpanded.value ? '\u25B2' : '\u25BC'}
           </button>
         </div>
       </div>
@@ -120,7 +120,7 @@ export function FloatingPanel() {
             class="px-2.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg"
             title="Mở cấu hình Whitelist & Giá"
           >
-            ⚙
+            {'\u2699'}
           </button>
         </div>
 
