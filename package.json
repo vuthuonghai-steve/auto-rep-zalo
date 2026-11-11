@@ -1,6 +1,6 @@
 {
   "name": "zalo-personal-automation",
-  "version": "1.0.0",
+  "version": "0.0.0.0",
   "private": true,
   "type": "module",
   "description": "Hệ thống tự động hóa thu thập, biên tập và phân phối tin nhắn Zalo cá nhân 24/7",
@@ -10,10 +10,15 @@
     "zip": "wxt zip",
     "compile": "tsc --noEmit",
     "check": "biome check .",
+    "generate:icons": "node scripts/generate-icons.mjs",
     "test": "vitest run",
     "test:unit": "vitest run tests/unit",
     "test:integration": "vitest run tests/integration",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "bump:task": "node scripts/bump-version.mjs task",
+    "bump:patch": "node scripts/bump-version.mjs patch",
+    "bump:staging": "node scripts/bump-version.mjs staging",
+    "bump:major": "node scripts/bump-version.mjs major"
   },
   "dependencies": {
     "@preact/signals": "^2.0.1",
@@ -25,6 +30,7 @@
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
     "@playwright/test": "^1.50.0",
+    "@resvg/resvg-js": "^2.6.2",
     "@tailwindcss/vite": "^4.0.0",
     "@types/chrome": "^0.0.300",
     "@types/node": "^22.10.5",
