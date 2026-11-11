@@ -10,7 +10,7 @@ const targetType = process.argv[2]?.toLowerCase();
 const validTypes = ['major', 'staging', 'patch', 'task'];
 
 if (!targetType || !validTypes.includes(targetType)) {
-  console.error(`❌ Sử dụng: node scripts/bump-version.mjs <major|staging|patch|task>`);
+  console.error('❌ Sử dụng: node scripts/bump-version.mjs <major|staging|patch|task>');
   process.exit(1);
 }
 
@@ -19,7 +19,7 @@ const pkg = JSON.parse(rawPkg);
 
 let [major, staging, patch, task] = (pkg.version || '0.0.0.0')
   .split('.')
-  .map((v) => parseInt(v, 10) || 0);
+  .map((v) => Number.parseInt(v, 10) || 0);
 
 const oldVersion = `${major}.${staging}.${patch}.${task}`;
 
@@ -49,4 +49,3 @@ pkg.version = newVersion;
 
 fs.writeFileSync(pkgPath, `${JSON.stringify(pkg, null, 2)}\n`, 'utf8');
 console.log(`🚀 Version bumped: ${oldVersion} -> ${newVersion} (${targetType.toUpperCase()})`);
-

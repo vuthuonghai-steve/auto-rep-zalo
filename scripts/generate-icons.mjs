@@ -30,4 +30,3 @@ for (const size of sizes) {
   fs.writeFileSync(outPath, pngBuffer);
   console.log(`✅ Đã xuất: ${outPath} (${size}x${size})`);
 }
-
