@@ -8,21 +8,64 @@ export interface SelectorDefinition {
 export const SELECTORS = {
   SIDEBAR_CONVERSATIONS: {
     name: 'SIDEBAR_CONVERSATIONS',
-    tier1_semantic: '[data-id="conversation-list"]',
-    tier2_hierarchy: 'nav div[tabindex="0"]',
+    tier1_semantic: '[data-id="conversation-list"], #conversationList[role="grid"]',
+    tier2_hierarchy: 'nav div[tabindex="0"], div.virtualized-scroll #conversationList',
     tier3_class: '#conversationList',
+  },
+  SIDEBAR_ITEM: {
+    name: 'SIDEBAR_ITEM',
+    tier1_semantic: '[data-id="div_TabMsg_ThrdChItem"], [anim-data-id^="g"], [data-id^="conv-"]',
+    tier2_hierarchy: '#conversationList .msg-item, #conversationList .conv-item, nav .conv-item',
+    tier3_class: '.conv-item, .msg-item',
+  },
+  UNREAD_BADGE: {
+    name: 'UNREAD_BADGE',
+    tier1_semantic: '.z-conv-message.--unread, [data-translate-inner*="unread"]',
+    tier2_hierarchy:
+      '.conv-action__unread-v2 .z-noti-badge, .conv-item .unread-badge, .conv-item .unread-red-dot',
+    tier3_class: '.z-noti-badge, .unread-badge, .unread-red-dot',
   },
   CHAT_MESSAGE_CONTAINER: {
     name: 'CHAT_MESSAGE_CONTAINER',
-    tier1_semantic: '[data-id="message-view-list"]',
-    tier2_hierarchy: 'div[role="main"] div[data-scroll="true"]',
-    tier3_class: '.chat-message-list',
+    tier1_semantic: '[data-id="message-view-list"], #messageViewContainer[class*="message-view"]',
+    tier2_hierarchy: 'div[role="main"] div[data-scroll="true"], #messageView #messageViewContainer',
+    tier3_class: '.chat-message-list, #messageViewContainer, .message-view__scroll',
   },
   CHAT_INPUT_BOX: {
     name: 'CHAT_INPUT_BOX',
     tier1_semantic: '[data-id="chat-input-content"]',
     tier2_hierarchy: 'footer div[contenteditable="true"]',
     tier3_class: '#chat-input-text',
+  },
+  JUMP_TO_NEWEST: {
+    name: 'JUMP_TO_NEWEST',
+    tier1_semantic: '[aria-label="Jump to 0 newest messages"], [aria-label*="newest messages"]',
+    tier2_hierarchy:
+      '.bottom-nav-floating-container .new-messages-container, .bottom-nav-floating-container [aria-label*="newest messages"]',
+    tier3_class: '.new-messages-container, .bottom-nav-floating-container',
+  },
+  LOCK_SEND_MESSAGE: {
+    name: 'LOCK_SEND_MESSAGE',
+    tier1_semantic:
+      '[data-translate-inner*="STR_LOCK_SEND_MESSAGE"], [data-translate-inner*="STR_COMMUNITY_LOCK_SEND_MESSAGE"]',
+    tier2_hierarchy:
+      '.lockSendMessageBox .lockSendMessageBox--hightlight, .lockSendMessageBox .message',
+    tier3_class: '.lockSendMessageBox, .lockSendMessageBox--hightlight',
+  },
+  ALBUM_CONTAINER: {
+    name: 'ALBUM_CONTAINER',
+    tier1_semantic: '[data-id="div_ReceivedMsg_GrpPhoto"]',
+    tier2_hierarchy:
+      '#album-container .card--group-photo, .msg-card .album-container, #album-container',
+    tier3_class: '#album-container, .card--group-photo, .album-container',
+  },
+  ALBUM_ITEM_PHOTO: {
+    name: 'ALBUM_ITEM_PHOTO',
+    tier1_semantic:
+      '.album__item[data-component="photo"], [data-component="photo"], img.zimg-el[data-z-element-type="image"]',
+    tier2_hierarchy:
+      '#album-container .card--group-photo, .album .album__item, .album-container .album-item',
+    tier3_class: '.album__item, img.zimg-el, .card--group-photo__row__item, .album-item',
   },
   FORWARD_MODAL: {
     name: 'FORWARD_MODAL',
@@ -166,6 +209,28 @@ export const SelectorHealthChecker = {
     // Captcha modal chỉ được tính là đang xuất hiện khi không bị ẩn
     return (
       el.style.display !== 'none' && !el.hasAttribute('hidden') && !el.classList.contains('hidden')
+    );
+  },
+
+  isChatLocked(root?: ParentNode): boolean {
+    const el = resolveSelector(SELECTORS.LOCK_SEND_MESSAGE, root).element;
+    if (!el) return false;
+    const box = el.closest<HTMLElement>('.lockSendMessageBox') || el;
+    return (
+      box.style.display !== 'none' &&
+      !box.hasAttribute('hidden') &&
+      !box.classList.contains('hidden')
+    );
+  },
+
+  hasJumpToNewest(root?: ParentNode): boolean {
+    const el = resolveSelector(SELECTORS.JUMP_TO_NEWEST, root).element;
+    if (!el) return false;
+    const container = el.closest<HTMLElement>('.bottom-nav-floating-container') || el;
+    return (
+      container.style.display !== 'none' &&
+      !container.hasAttribute('hidden') &&
+      !container.classList.contains('hidden')
     );
   },
 };
