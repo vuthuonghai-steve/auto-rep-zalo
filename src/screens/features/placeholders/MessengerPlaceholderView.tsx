@@ -1,3 +1,6 @@
+/**
+ * @deprecated Legacy placeholder for Nodes 4-10. Use dedicated node views in `src/screens/features/nodes/` instead.
+ */
 export function MessengerPlaceholderView() {
   return (
     <div class="bg-white border border-gray-200 rounded-xl p-8 text-center space-y-4">
