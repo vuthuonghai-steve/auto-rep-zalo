@@ -81,7 +81,7 @@ describe('Phase 7: Full Orchestrator & Cross-Cutting Polish (Unit Tests)', () =>
   });
 
   it('should process complete 10-node cycle for whitelisted group via Orchestrator', async () => {
-    const orch = new ZaloAutomationOrchestrator();
+    const orch = new ZaloAutomationOrchestrator({ quiescenceDelayMs: 0 });
 
     // Thực thi xử lý nhóm conv-group-source-1
     await orch.processGroup('conv-group-source-1', 'test_corr_id_001');

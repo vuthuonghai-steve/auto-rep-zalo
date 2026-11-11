@@ -33,6 +33,20 @@ export class TextInjector {
       // 1. Chuyển sang nhóm con đích
       await this.switcher.switchToGroup(targetId);
 
+      // Kiểm tra nhóm đích có bị khóa gửi tin (chỉ admin mới được chat) hay không
+      const lockBox = resolveElement(SELECTORS.LOCK_SEND_MESSAGE, this.doc);
+      if (lockBox) {
+        logger.warn(
+          'TEXT_INJECTION',
+          'N09',
+          '[N09] Target group is locked (only admin can post). Skipping text injection for this target.',
+          {
+            groupId: targetId,
+          },
+        );
+        continue;
+      }
+
       // 2. Tìm phần tử ô nhập liệu
       const chatInput = resolveElement(SELECTORS.CHAT_INPUT_BOX, this.doc);
       if (!chatInput) {
