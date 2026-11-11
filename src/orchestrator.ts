@@ -41,8 +41,8 @@ export class ZaloAutomationOrchestrator {
         logger.info(
           'ORCHESTRATOR',
           'N02',
-          'N02 Queue Manager is disabled. Skipping dequeue task processing.',
-          { groupId, correlationId },
+          `N02 Queue Manager is disabled. Skipping dequeue task processing (Corr: ${correlationId}).`,
+          { groupId },
         );
         return;
       }
@@ -102,8 +102,8 @@ export class ZaloAutomationOrchestrator {
       logger.info(
         'ORCHESTRATOR',
         'N02',
-        'N02 Queue Manager is disabled. Skipping processGroup execution.',
-        { groupId, correlationId },
+        `N02 Queue Manager is disabled. Skipping processGroup execution (Corr: ${correlationId}).`,
+        { groupId },
       );
       return;
     }
@@ -221,10 +221,9 @@ export class ZaloAutomationOrchestrator {
         logger.info(
           'ORCHESTRATOR',
           'N07',
-          'N07 Price Router is disabled. Using fallback/default target group.',
+          `N07 Price Router is disabled. Using fallback/default target group: [${defaultTargets.join(', ')}].`,
           {
             groupId,
-            targetGroupIds: defaultTargets,
           },
         );
         routeResult = {
@@ -257,8 +256,8 @@ export class ZaloAutomationOrchestrator {
           logger.info(
             'ORCHESTRATOR',
             'N08',
-            '[DRY_RUN] N08 Forward Automator is disabled. Skipping native modal media forward.',
-            { groupId, targetGroupIds: routeResult.targetGroupIds },
+            `[DRY_RUN] N08 Forward Automator is disabled. Skipping native modal media forward to [${routeResult.targetGroupIds.join(', ')}].`,
+            { groupId },
           );
         }
       }
@@ -276,8 +275,8 @@ export class ZaloAutomationOrchestrator {
           logger.info(
             'ORCHESTRATOR',
             'N09',
-            '[DRY_RUN] N09 Text Injector is disabled. Skipping text injection.',
-            { groupId, targetGroupIds: routeResult.targetGroupIds },
+            `[DRY_RUN] N09 Text Injector is disabled. Skipping text injection to [${routeResult.targetGroupIds.join(', ')}].`,
+            { groupId },
           );
         }
       }
