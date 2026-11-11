@@ -8,9 +8,11 @@ export interface SelectorDefinition {
 export const SELECTORS = {
   SIDEBAR_CONVERSATIONS: {
     name: 'SIDEBAR_CONVERSATIONS',
-    tier1_semantic: '[data-id="conversation-list"], #conversationList[role="grid"]',
-    tier2_hierarchy: 'nav div[tabindex="0"], div.virtualized-scroll #conversationList',
-    tier3_class: '#conversationList',
+    tier1_semantic:
+      '[data-id="div_TabMsg_ThrdChList"], [data-id="conversation-list"], #conversationListId, #conversationList[role="grid"]',
+    tier2_hierarchy:
+      'nav div[tabindex="0"], #conversationListId #conversationList, div.virtualized-scroll #conversationList',
+    tier3_class: '#conversationList, #conversationListId, .virtualized-scroll',
   },
   SIDEBAR_ITEM: {
     name: 'SIDEBAR_ITEM',

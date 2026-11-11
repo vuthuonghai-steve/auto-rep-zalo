@@ -123,7 +123,7 @@ describe('Selectors Diagnostic & Temps.html Mapping Verification', () => {
     it('should resolve SIDEBAR_CONVERSATIONS on temps.html DOM', () => {
       const res = resolveSelector(SELECTORS.SIDEBAR_CONVERSATIONS);
       expect(res.element).not.toBeNull();
-      expect(res.element?.id).toBe('conversationList');
+      expect(['conversationList', 'conversationListId']).toContain(res.element?.id);
     });
 
     it('should resolve SIDEBAR_ITEM supporting anim-data-id prefix "g" and div_TabMsg_ThrdChItem', () => {
