@@ -1,4 +1,19 @@
-import { resetRouter } from '@/configs/router.config';
+import { GlobalWindow } from 'happy-dom';
+
+// DOM polyfill for non-browser runners (e.g. native bun test)
+if (typeof document === 'undefined') {
+  const window = new GlobalWindow();
+  for (const key of Object.getOwnPropertyNames(window)) {
+    if (!(key in globalThis)) {
+      try {
+        // @ts-expect-error polyfill global for bun test
+        globalThis[key] = window[key];
+      } catch {}
+    }
+  }
+}
+
+import { isValidRoute, parseRoute, resetRouter } from '@/configs/router.config';
 import { AppRoot } from '@/screens/AppRoot';
 import { NotFoundScreen } from '@/screens/common/NotFoundScreen';
 import { DefaultFallbackView, getFeatureDetailComponent } from '@/screens/features/registry';
@@ -72,18 +87,84 @@ describe('Screens & Router Integration (T005, T006, T014, T015)', () => {
       expect(container.textContent).toContain('Quay lại');
     });
 
-    it('should render FeatureDetailScreen with placeholder for /feature/message-collector', () => {
-      render(h(AppRoot, { initialPath: '/feature/message-collector' }), container);
+    it('should render FeatureDetailScreen for node routes such as /feature/n01-sidebar-observer', () => {
+      render(h(AppRoot, { initialPath: '/feature/n01-sidebar-observer' }), container);
 
-      expect(container.textContent).toContain('Bộ Thu Thập Tin Nhắn Nguồn (Node 1 - Node 3)');
-      expect(container.textContent).toContain('Slot tích hợp cho observer sidebar');
+      expect(container.textContent).toContain('Bộ Lắng Nghe Sidebar (Sidebar Observer)');
+      expect(container.textContent).toContain(
+        'Bắt tin mới qua MutationObserver trên danh sách hội thoại Zalo sidebar',
+      );
+      expect(container.textContent).toContain('Quay lại');
     });
 
-    it('should render NotFoundScreen when route is not recognized', () => {
+    it('should render NotFoundScreen when route is not recognized or deprecated', () => {
       render(h(AppRoot, { initialPath: '/invalid/non-existent' }), container);
 
       expect(container.textContent).toContain('404');
       expect(container.textContent).toContain('Không tìm thấy trang');
+
+      render(null, container);
+      render(h(AppRoot, { initialPath: '/feature/message-collector' }), container);
+      expect(container.textContent).toContain('404');
+      expect(container.textContent).toContain('Không tìm thấy trang');
+    });
+  });
+
+  describe('Dynamic Routing for All 11 Feature Nodes', () => {
+    const ALL_11_ROUTES = [
+      { path: '/feature/core-settings', name: 'Cấu hình Hệ Thống & Whitelist' },
+      { path: '/feature/n01-sidebar-observer', name: 'Bộ Lắng Nghe Sidebar (Sidebar Observer)' },
+      { path: '/feature/n02-queue-manager', name: 'Bộ Quản Lý Hàng Chờ (Queue Manager)' },
+      { path: '/feature/n03-chat-switcher', name: 'Bộ Chuyển Hội Thoại (Chat Switcher)' },
+      { path: '/feature/n04-delta-stitcher', name: 'Bộ Trích Xuất Tin Mới (Delta Stitcher)' },
+      {
+        path: '/feature/n05-bundle-aggregator',
+        name: 'Bộ Gom Cụm Tin & Media (Bundle Aggregator)',
+      },
+      { path: '/feature/n06-dedup-gate', name: 'Cổng Lọc Trùng (Dedup Gate)' },
+      { path: '/feature/n07-price-router', name: 'Bộ Định Tuyến & Lọc Giá (Price Router)' },
+      {
+        path: '/feature/n08-forward-automator',
+        name: 'Bộ Chuyển Tiếp Media (Forward Automator)',
+      },
+      {
+        path: '/feature/n09-text-injector',
+        name: 'Bộ Tiêm Nội Dung Văn Bản (Text Injector)',
+      },
+      {
+        path: '/feature/n10-committer-drain',
+        name: 'Bộ Lưu Vết & Giải Phóng (Committer & Drain)',
+      },
+    ];
+
+    for (const item of ALL_11_ROUTES) {
+      it(`should correctly route and render ${item.path} without 404`, () => {
+        resetRouter(item.path);
+        render(null, container);
+        render(h(AppRoot, { initialPath: item.path }), container);
+
+        expect(container.textContent).not.toContain('404');
+        expect(container.textContent).not.toContain('Không tìm thấy trang');
+        expect(container.textContent).toContain(item.name);
+        expect(container.textContent).toContain('Quay lại');
+      });
+    }
+
+    it('should validate all 11 routes using isValidRoute and parseRoute helpers', () => {
+      for (const item of ALL_11_ROUTES) {
+        expect(isValidRoute(item.path)).toBe(true);
+        const parsed = parseRoute(item.path);
+        expect(parsed.isValid).toBe(true);
+        expect(parsed.feature).toBeDefined();
+        expect(parsed.feature?.routePath).toBe(item.path);
+      }
+      expect(isValidRoute('/')).toBe(true);
+      expect(isValidRoute('/invalid/route')).toBe(false);
+      expect(isValidRoute('/feature/message-collector')).toBe(false);
+      expect(isValidRoute('/feature/message-forwarder')).toBe(false);
+
+      const invalidParsed = parseRoute('/feature/message-collector');
+      expect(invalidParsed.isValid).toBe(false);
     });
   });
 });
