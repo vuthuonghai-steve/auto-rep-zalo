@@ -24,8 +24,12 @@ export function FloatingPanel() {
 
   const handleOpenOptions = () => {
     try {
-      if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.openOptionsPage) {
-        chrome.runtime.openOptionsPage();
+      if (typeof chrome !== 'undefined' && chrome.runtime) {
+        if (chrome.tabs?.create) {
+          chrome.tabs.create({ url: chrome.runtime.getURL('options.html') });
+        } else if (chrome.runtime.openOptionsPage) {
+          chrome.runtime.openOptionsPage();
+        }
       }
     } catch {
       // Bỏ qua lỗi trong môi trường test

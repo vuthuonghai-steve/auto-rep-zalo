@@ -12,6 +12,11 @@ export default defineConfig({
     description: 'Hệ thống tự động hóa thu thập, biên tập và phân phối tin nhắn Zalo cá nhân 24/7',
     version: packageJson.version,
     permissions: ['storage', 'unlimitedStorage', 'power'],
+    action: {},
+    options_ui: {
+      page: 'options.html',
+      open_in_tab: true,
+    },
     host_permissions: ['https://chat.zalo.me/*'],
     icons: {
       16: 'icons/icon-16.png',

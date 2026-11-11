@@ -83,4 +83,14 @@ export default defineBackground(() => {
     const json = await logRepo.exportLogsToJson(msg.data.days || 7);
     return { json };
   });
+
+  // 6. Mở trang Options trong một tab mới khi người dùng nhấp vào biểu tượng Extension
+  chrome.action?.onClicked?.addListener(() => {
+    const optionsUrl = chrome.runtime.getURL('options.html');
+    if (chrome.tabs?.create) {
+      chrome.tabs.create({ url: optionsUrl });
+    } else {
+      chrome.runtime.openOptionsPage();
+    }
+  });
 });
