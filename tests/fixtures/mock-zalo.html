@@ -188,6 +188,26 @@
         <div class="modal-body">Vui lòng hoàn thành câu đố xác minh</div>
       </div>
     </div>
+
+    <!-- Tier 1: [aria-label="Jump to 0 newest messages"] | Tier 2: .bottom-nav-floating-container .new-messages-container | Tier 3: .new-messages-container -->
+    <div class="bottom-nav-floating-container" id="bottom-nav-floating-container" style="display: none;">
+      <div class="new-messages-container new-messages-container-enter-done">
+        <div class="icon-btn-container cursor-pointer" aria-label="Jump to 0 newest messages">
+          <i class="fa fa-Chevron_Double_Down_32_Line"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tier 1: [data-translate-inner*="STR_LOCK_SEND_MESSAGE"] | Tier 2: .lockSendMessageBox .lockSendMessageBox--hightlight | Tier 3: .lockSendMessageBox -->
+    <div class="lockSendMessageBox" id="lock-send-message-box" style="display: none;">
+      <div class="message-box-message-wrapper">
+        <div class="message">
+          <span data-translate-inner="STR_LOCK_SEND_MESSAGE_MESSAGE_PEFIX">Chỉ</span>
+          <span class="lockSendMessageBox--hightlight clickable" data-translate-inner="STR_COMMUNITY_LOCK_SEND_MESSAGE_MESSAGE_ENITY">trưởng/phó cộng đồng</span>
+          <span data-translate-inner="STR_COMMUNITY_LOCK_SEND_MESSAGE_MESSAGE">được gửi tin nhắn vào cộng đồng.</span>
+        </div>
+      </div>
+    </div>
   </div>
 </body>
 </html>
