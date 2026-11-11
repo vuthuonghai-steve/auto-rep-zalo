@@ -4,6 +4,7 @@ import { flagsSignal, toggleFeatureFlag } from '@/configs/storage.config';
 import { NotFoundScreen } from '@/screens/common/NotFoundScreen';
 import { ToggleSwitch } from '@/screens/common/ToggleSwitch';
 import { getFeatureDetailComponent } from '@/screens/features/registry';
+import { LAYER_BADGE_STYLES } from '@/screens/menu/components/FeatureCard';
 import { h } from 'preact';
 
 export function FeatureDetailScreen() {
@@ -42,13 +43,15 @@ export function FeatureDetailScreen() {
   };
 
   const DetailComponent = getFeatureDetailComponent(feature.detailComponentKey);
+  const layerBadgeClass =
+    LAYER_BADGE_STYLES[feature.layer] ?? 'bg-gray-100 text-gray-700 border-gray-200';
 
   return (
     <div class="max-w-5xl mx-auto px-4 py-8 space-y-6">
       {/* Header Scaffold */}
       <header class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div class="space-y-2">
-          <div class="flex items-center gap-3">
+          <div class="flex items-center gap-3 flex-wrap">
             <button
               type="button"
               onClick={handleBack}
@@ -56,6 +59,18 @@ export function FeatureDetailScreen() {
             >
               ← Quay lại
             </button>
+            <span
+              data-testid={`node-code-${feature.id}`}
+              class="inline-flex items-center px-2 py-0.5 rounded font-mono text-xs font-bold bg-slate-100 text-slate-800 border border-slate-300"
+            >
+              [{feature.nodeCode}]
+            </span>
+            <span
+              data-testid={`layer-badge-${feature.id}`}
+              class={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold border tracking-wider uppercase ${layerBadgeClass}`}
+            >
+              {feature.layer}
+            </span>
             <h1 class="text-xl font-bold text-gray-900">{feature.name}</h1>
             <span
               class={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
