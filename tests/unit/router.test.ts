@@ -1,18 +1,40 @@
+import { GlobalWindow } from 'happy-dom';
+
+// DOM polyfill for non-browser runners (e.g. native bun test)
+if (typeof document === 'undefined') {
+  const window = new GlobalWindow();
+  for (const key of Object.getOwnPropertyNames(window)) {
+    if (!(key in globalThis)) {
+      try {
+        // @ts-expect-error polyfill global for bun test
+        globalThis[key] = window[key];
+      } catch {}
+    }
+  }
+}
+
 import {
   RouterProvider,
   currentPathSignal,
   goBack,
   historySignal,
+  isValidRoute,
   matchRoute,
   navigate,
+  paramsSignal,
+  parseRoute,
   resetRouter,
   useRouter,
 } from '@/configs/router.config';
 import { h, render } from 'preact';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 describe('Reactive In-Memory Router (T004)', () => {
   beforeEach(() => {
+    resetRouter('/');
+  });
+
+  afterEach(() => {
     resetRouter('/');
   });
 
@@ -98,6 +120,39 @@ describe('Reactive In-Memory Router (T004)', () => {
     });
   });
 
+  describe('Dynamic Route Validation & Parsing (isValidRoute, parseRoute)', () => {
+    it('should validate root and all 11 nodes routes', () => {
+      expect(isValidRoute('/')).toBe(true);
+      expect(isValidRoute('/feature/core-settings')).toBe(true);
+      expect(isValidRoute('/feature/n01-sidebar-observer')).toBe(true);
+      expect(isValidRoute('/feature/n10-committer-drain')).toBe(true);
+      expect(isValidRoute('/invalid')).toBe(false);
+      expect(isValidRoute('/feature/unknown')).toBe(false);
+    });
+
+    it('should parse route and return valid metadata', () => {
+      const rootParsed = parseRoute('/');
+      expect(rootParsed.isValid).toBe(true);
+      expect(rootParsed.params).toEqual({});
+
+      const nodeParsed = parseRoute('/feature/n01-sidebar-observer');
+      expect(nodeParsed.isValid).toBe(true);
+      expect(nodeParsed.params).toEqual({ id: 'n01-sidebar-observer' });
+      expect(nodeParsed.feature?.id).toBe('n01-sidebar-observer');
+
+      const invalidParsed = parseRoute('/feature/non-existent-node');
+      expect(invalidParsed.isValid).toBe(false);
+    });
+
+    it('should update paramsSignal on navigation', () => {
+      navigate('/feature/n02-queue-manager');
+      expect(paramsSignal.value).toEqual({ id: 'n02-queue-manager' });
+
+      navigate('/');
+      expect(paramsSignal.value).toEqual({});
+    });
+  });
+
   describe('RouterProvider & useRouter Hook', () => {
     it('should render children and provide router context values', () => {
       let contextSnapshot: ReturnType<typeof useRouter> | undefined;
@@ -128,6 +183,9 @@ describe('Reactive In-Memory Router (T004)', () => {
       snapshot.goBack();
       expect(snapshot.currentPath).toBe('/feature/test');
       expect(snapshot.canGoBack).toBe(false);
+
+      render(null, container);
+      container.remove();
     });
   });
 });
