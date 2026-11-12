@@ -1,6 +1,6 @@
 # .agents/scripts/guards/verification-gate.ps1
 # Hook Type: Stop
-# Enforces Binary Definition of Done (Gate 5)
+# Enforces Binary Definition of Done (Gate 5) & Release Mode Quality Gate (Hybrid XML-YAML Architecture)
 
 param(
     [string]$InputJson
@@ -8,7 +8,7 @@ param(
 
 $sw = [System.Diagnostics.Stopwatch]::StartNew()
 
-# 1. Thu thap JSON tu bo nho (Memory Parameter) hoac pipeline
+# 1. Thu thap JSON tu bo nho hoac pipeline
 if (-not $InputJson -and $input) {
     $InputJson = ($input | Out-String).Trim()
 }
@@ -29,7 +29,12 @@ if (-not $InputJson) {
 
 $status = "ALLOW"
 $reason = $null
-$details = @{ gate5 = "PASSED" }
+$details = @{
+    gate5 = "PASSED"
+    xml_yaml_hybrid = "SKIPPED"
+    mixed_payload = "SKIPPED"
+    clickable_links = "SKIPPED"
+}
 
 try {
     if ($InputJson -match '(\{[\s\S]*\})') {
@@ -43,6 +48,38 @@ try {
     # Neu agent dung vi hoan thanh binh thuong (NO_TOOL_CALL)
     if ($reason -eq "NO_TOOL_CALL") {
         [Console]::Error.WriteLine("[VERIFICATION GATE] Hoàn tất phiên làm việc. Xác thực cổng Definition of Done thành công.")
+        
+        $responseText = if ($payload.response) { $payload.response } else { "" }
+        if ($responseText) {
+            $guardsDir = $PSScriptRoot
+            
+            # 1. Hybrid XML-YAML Guard
+            $hybridScript = Join-Path $guardsDir "xml-yaml-hybrid-guard.ps1"
+            if (Test-Path $hybridScript) {
+                try {
+                    $hybOut = & $hybridScript -InputText $responseText | ConvertFrom-Json
+                    $details.xml_yaml_hybrid = $hybOut.status
+                } catch { $details.xml_yaml_hybrid = "ERROR" }
+            }
+
+            # 2. Mixed Payload Boundary Guard
+            $mixedScript = Join-Path $guardsDir "mixed-payload-guard.ps1"
+            if (Test-Path $mixedScript) {
+                try {
+                    $mpOut = & $mixedScript -InputText $responseText | ConvertFrom-Json
+                    $details.mixed_payload = $mpOut.status
+                } catch { $details.mixed_payload = "ERROR" }
+            }
+
+            # 3. Clickable Links Guard
+            $linkScript = Join-Path $guardsDir "clickable-links-guard.ps1"
+            if (Test-Path $linkScript) {
+                try {
+                    $clOut = & $linkScript -InputText $responseText | ConvertFrom-Json
+                    $details.clickable_links = $clOut.status
+                } catch { $details.clickable_links = "ERROR" }
+            }
+        }
     } else {
         $details.gate5 = "TERMINATED_EARLY ($reason)"
     }
@@ -53,10 +90,8 @@ try {
     $sw.Stop()
     $durationMs = [Math]::Round($sw.Elapsed.TotalMilliseconds, 2)
 
-    # 1. Ghi dau chan ra stderr (Antigravity engine log ghi nhan)
-    [Console]::Error.WriteLine("[GUARD FOOTPRINT][verification-gate] Status=$status | Reason=$reason | Duration=${durationMs}ms")
+    [Console]::Error.WriteLine("[GUARD FOOTPRINT][verification-gate] Status=$status | Reason=$reason | Duration=${durationMs}ms | Gates=$($details | ConvertTo-Json -Compress)")
 
-    # 2. Ghi dau chan ben vung vao file JSONL
     try {
         $logDir = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot "..\..\logs"))
         if (-not (Test-Path $logDir)) {
@@ -74,9 +109,7 @@ try {
         }
         $entryJson = $footprint | ConvertTo-Json -Compress
         [System.IO.File]::AppendAllLines($logFile, [string[]]@($entryJson), [System.Text.Encoding]::UTF8)
-    } catch {
-        # Fail-safe
-    }
+    } catch {}
 }
 
 Write-Output '{"decision": "allow"}'
