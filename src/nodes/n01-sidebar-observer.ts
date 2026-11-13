@@ -1,4 +1,9 @@
-import type { GroupDetectedEvent, WhitelistGroupItem } from '@/contracts/schemas';
+import type {
+  DiscoveredGroupItem,
+  GroupDetectedEvent,
+  WhitelistGroupItem,
+  WhitelistMatchingRule,
+} from '@/contracts/schemas';
 import { SELECTORS, resolveElement } from '@/contracts/selectors';
 import { type ZaloAutomationDatabase, db as defaultDb } from '@/db/database';
 import { extractUnreadBadge } from '@/utils/badge-extractor';
@@ -724,4 +729,197 @@ export class SidebarObserver {
       }
     }
   }
+
+  /**
+   * Trả về danh sách Whitelist thô hiện tại trong observer.
+   */
+  getWhitelist(): (string | WhitelistGroupItem)[] {
+    return [...this.rawWhitelist];
+  }
+
+  /**
+   * Quét và khám phá các nhóm trên Sidebar dựa theo document hiện tại.
+   */
+  discoverGroups(): DiscoveredGroupItem[] {
+    return discoverSidebarGroups(this.doc, this.rawWhitelist);
+  }
+}
+
+/**
+ * Quét toàn diện danh mục nhóm trên DOM Sidebar Zalo Web.
+ * (GATE-N01-06 / T015)
+ *
+ * @param doc Document cần quét (mặc định global document)
+ * @param currentWhitelist Danh sách Whitelist hiện tại để kiểm tra isInWhitelist
+ * @returns DiscoveredGroupItem[]
+ */
+export function discoverSidebarGroups(
+  doc?: Document,
+  currentWhitelist?: (WhitelistGroupItem | string)[] | Set<string>,
+): DiscoveredGroupItem[] {
+  const targetDoc =
+    doc || (typeof document !== 'undefined' ? document : (null as unknown as Document));
+  if (!targetDoc) return [];
+
+  const container = resolveElement(SELECTORS.SIDEBAR_CONVERSATIONS, targetDoc);
+  if (!container) return [];
+
+  const candidateElements = container.querySelectorAll<HTMLElement>(
+    'div.msg-item[data-id="div_TabMsg_ThrdChItem"], [anim-data-id^="g"], [anim-data-id], .conv-item, .msg-item',
+  );
+
+  const discovered: DiscoveredGroupItem[] = [];
+  const seenIds = new Set<string>();
+
+  // Chuẩn bị lookup set & rules cho whitelist
+  const whitelistIds = new Set<string>();
+  const whitelistNames = new Set<string>();
+  const structuredRules: WhitelistGroupItem[] = [];
+
+  if (currentWhitelist) {
+    if (currentWhitelist instanceof Set) {
+      for (const id of currentWhitelist) {
+        whitelistIds.add(id);
+      }
+    } else if (Array.isArray(currentWhitelist)) {
+      for (const item of currentWhitelist) {
+        if (typeof item === 'string') {
+          whitelistIds.add(item);
+          const norm = normalizeZaloText(item).toLowerCase();
+          if (norm) whitelistNames.add(norm);
+        } else if (item && typeof item === 'object') {
+          structuredRules.push(item);
+          if (item.groupId) whitelistIds.add(item.groupId);
+          if (item.groupName) {
+            const norm = normalizeZaloText(item.groupName).toLowerCase();
+            if (norm) whitelistNames.add(norm);
+          }
+        }
+      }
+    }
+  }
+
+  const checkInWhitelist = (groupId: string, groupName: string): boolean => {
+    if (groupId && whitelistIds.has(groupId)) return true;
+    const norm = normalizeZaloText(groupName).toLowerCase();
+    if (norm && whitelistNames.has(norm)) return true;
+    for (const rule of structuredRules) {
+      if (rule.isEnabled === false) continue;
+      if (rule.groupId && rule.groupId === groupId) return true;
+      if (
+        groupName &&
+        rule.groupName &&
+        isGroupNameMatching(groupName, rule.groupName, rule.matchingRule)
+      ) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  for (let i = 0; i < candidateElements.length; i++) {
+    const rawEl = candidateElements[i];
+    if (!rawEl) continue;
+
+    // Tìm phần tử bao bọc msg-item gần nhất
+    const item = rawEl.classList.contains('msg-item')
+      ? rawEl
+      : (rawEl.closest('.msg-item') as HTMLElement) || rawEl;
+
+    // 1. Trích xuất groupId
+    const rawId = item.getAttribute('anim-data-id') || item.getAttribute('data-id') || '';
+    const imgEl = item.querySelector<HTMLImageElement>('img[data-ava-uid]');
+    const avatarUid = imgEl?.getAttribute('data-ava-uid') || '';
+    const groupId = (rawId.startsWith('g') ? rawId : avatarUid) || rawId;
+
+    if (!groupId || seenIds.has(groupId)) continue;
+    seenIds.add(groupId);
+
+    // 2. Trích xuất groupName
+    const nameEl =
+      item.querySelector('div-b16.conv-item-title__name .truncate') ||
+      item.querySelector('.conv-item-title__name .truncate') ||
+      item.querySelector('.conv-item-title__name > div') ||
+      item.querySelector('.conv-item-title__name');
+    const rawName = nameEl?.textContent || '';
+    const groupName = normalizeZaloText(rawName) || `Nhóm ${groupId}`;
+
+    // 3. Avatar & Community indicator
+    const avatarUrl = imgEl?.src || undefined;
+    const isCommunity =
+      item.querySelector('i.community__conv-indicator, i[class*="Community"]') !== null;
+
+    // 4. Unread count & badge
+    const badgeEl = item.querySelector('.conv-action__unread-v2 .z-noti-badge, .z-noti-badge');
+    const badgeInfo = extractUnreadBadge(badgeEl);
+    const unreadCount = badgeInfo.unreadCount;
+
+    // 5. Last snippet
+    const snippetEl =
+      item.querySelector(SELECTORS.PREVIEW_MESSAGE.tier1_semantic) ||
+      item.querySelector(SELECTORS.PREVIEW_MESSAGE.tier2_hierarchy) ||
+      item.querySelector(SELECTORS.PREVIEW_MESSAGE.tier3_class);
+    const lastSnippet = snippetEl?.textContent
+      ? normalizeZaloText(snippetEl.textContent)
+      : undefined;
+
+    // 6. isInWhitelist
+    const isInWhitelist = checkInWhitelist(groupId, groupName);
+
+    discovered.push({
+      groupId,
+      groupName,
+      avatarUrl,
+      isCommunity,
+      unreadCount,
+      lastSnippet,
+      isInWhitelist,
+    });
+  }
+
+  return discovered;
+}
+
+/**
+ * Cơ chế Hot-Sync Whitelist (GATE-N01-04 / T017):
+ * Lưu trữ danh sách whitelist vào bảng Dexie `app_settings` (key: 'n01_whitelist_groups').
+ * Nếu có truyền đối tượng observer, cập nhật ngay lập tức bộ nhớ RAM qua observer.updateWhitelist().
+ */
+export async function syncWhitelistSettings(
+  groups: WhitelistGroupItem[],
+  dbInstance: ZaloAutomationDatabase = defaultDb,
+  observer?: SidebarObserver,
+): Promise<void> {
+  const now = Date.now();
+  await dbInstance.app_settings.put({
+    key: 'n01_whitelist_groups',
+    value: { groups },
+    updatedAt: now,
+  });
+
+  if (observer) {
+    observer.updateWhitelist(groups);
+  }
+}
+
+/**
+ * Tải danh sách Whitelist từ Dexie app_settings.
+ */
+export async function loadWhitelistSettings(
+  dbInstance: ZaloAutomationDatabase = defaultDb,
+): Promise<WhitelistGroupItem[]> {
+  const record =
+    (await dbInstance.app_settings.get('n01_whitelist_groups')) ||
+    (await dbInstance.app_settings.get('whitelist_groups'));
+  if (!record || !record.value) {
+    return [];
+  }
+  const val = record.value as { groups?: WhitelistGroupItem[] };
+  if (Array.isArray(val.groups)) {
+    return val.groups;
+  }
+  if (Array.isArray(record.value)) {
+    return record.value as unknown as WhitelistGroupItem[];
+  }
+  return [];
 }

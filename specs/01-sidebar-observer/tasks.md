@@ -119,18 +119,18 @@ exit_condition: "User Stories 1 và 2 đều hoạt động đồng bộ, vượ
 
 ### Tests for User Story 3
 
-- [ ] T013 [P] [US3] Xây dựng bộ test kiểm chứng hàm quét khám phá nhóm `discoverSidebarGroups` và đồng bộ Whitelist (GATE-N01-06) trong `tests/unit/n01-sidebar-discovery.test.ts`
-- [ ] T014 [P] [US3] Xây dựng bộ test render và tương tác Signal cho màn hình `SidebarObserverScreen` trong `tests/unit/n01-sidebar-screen.test.ts`
+- [x] T013 [P] [US3] Xây dựng bộ test kiểm chứng hàm quét khám phá nhóm `discoverSidebarGroups` và đồng bộ Whitelist (GATE-N01-06) trong `tests/unit/n01-sidebar-discovery.test.ts`
+- [x] T014 [P] [US3] Xây dựng bộ test render và tương tác Signal cho màn hình `SidebarObserverScreen` trong `tests/unit/n01-sidebar-screen.test.ts`
 
 ### Implementation for User Story 3
 
-- [ ] T015 [US3] Hiện thực hàm quét toàn diện danh mục nhóm Sidebar `discoverSidebarGroups` trong `src/nodes/n01-sidebar-observer.ts`
-- [ ] T016a [P] [US3] Khai báo compile-time types và interfaces cho UI trong `src/screens/sidebar-observer/sidebar-observer.types.ts`
-- [ ] T016b [P] [US3] Xây dựng reactive signals store quản trị trạng thái nhóm và cấu hình trong `src/screens/sidebar-observer/sidebar-observer.signals.ts`
-- [ ] T016c [P] [US3] Xây dựng component drawer quản lý danh mục Whitelist ẩn/hiện trong `src/screens/sidebar-observer/components/WhitelistDrawer.tsx`
-- [ ] T016d [P] [US3] Xây dựng component card hiển thị trạng thái viễn trắc hàng đợi và kết nối trong `src/screens/sidebar-observer/components/TelemetryStatusCard.tsx`
-- [ ] T016e [US3] Hiện thực View Container chính `src/screens/sidebar-observer/SidebarObserverScreen.tsx` tích hợp các components nội bộ, kết nối Signals và nút "Quét Nhóm Từ Sidebar" (phụ thuộc T016a, T016b, T016c, T016d)
-- [ ] T017 [US3] Hiện thực cơ chế Hot-Sync Whitelist: Lưu cấu hình vào Dexie `app_settings` và tự động gọi `SidebarObserver.updateWhitelist()` tức thì không cần reload trang (GATE-N01-04)
+- [x] T015 [US3] Hiện thực hàm quét toàn diện danh mục nhóm Sidebar `discoverSidebarGroups` trong `src/nodes/n01-sidebar-observer.ts`
+- [x] T016a [P] [US3] Khai báo compile-time types và interfaces cho UI trong `src/screens/sidebar-observer/sidebar-observer.types.ts`
+- [x] T016b [P] [US3] Xây dựng reactive signals store quản trị trạng thái nhóm và cấu hình trong `src/screens/sidebar-observer/sidebar-observer.signals.ts`
+- [x] T016c [P] [US3] Xây dựng component drawer quản lý danh mục Whitelist ẩn/hiện trong `src/screens/sidebar-observer/components/WhitelistDrawer.tsx`
+- [x] T016d [P] [US3] Xây dựng component card hiển thị trạng thái viễn trắc hàng đợi và kết nối trong `src/screens/sidebar-observer/components/TelemetryStatusCard.tsx`
+- [x] T016e [US3] Hiện thực View Container chính `src/screens/sidebar-observer/SidebarObserverScreen.tsx` tích hợp các components nội bộ, kết nối Signals và nút "Quét Nhóm Từ Sidebar" (phụ thuộc T016a, T016b, T016c, T016d)
+- [x] T017 [US3] Hiện thực cơ chế Hot-Sync Whitelist: Lưu cấu hình vào Dexie `app_settings` và tự động gọi `SidebarObserver.updateWhitelist()` tức thì không cần reload trang (GATE-N01-04)
 
 <checkpoint>
 phase: "Phase 5: User Story 3"
