@@ -74,13 +74,13 @@ exit_condition: "Toàn bộ utilities và contracts sẵn sàng, 100% tests vư�
 
 ### Tests for User Story 1
 
-- [ ] T006 [P] [US1] Xây dựng bộ test hợp đồng và bóc tách DOM thực tế (GATE-N01-02) trong `tests/unit/n01-sidebar-observer-extraction.test.ts`
+- [x] T006 [P] [US1] Xây dựng bộ test hợp đồng và bóc tách DOM thực tế (GATE-N01-02) trong `tests/unit/n01-sidebar-observer-extraction.test.ts`
 
 ### Implementation for User Story 1
 
-- [ ] T007 [US1] Tái cấu trúc bộ bóc tách thẻ hội thoại trong `src/nodes/n01-sidebar-observer.ts` sử dụng selector chuẩn hóa 3 tầng (`anim-data-id`, `div-b16.conv-item-title__name .truncate`, `data-ava-uid`) thay thế các selector giả định cũ
-- [ ] T008 [US1] Hiện thực cơ chế Hợp nhất đa tín hiệu (Multi-Signal Fusion: badge counter, dot badge, unread message class, bold time, snippet delta) trong `src/nodes/n01-sidebar-observer.ts`
-- [ ] T009 [US1] Hiện thực thuật toán đối chiếu Whitelist `matchWhitelist` theo quy tắc `EXACT` và `CONTAINS` kèm ghi nhận viễn trắc `totalIgnoredNonWhitelist` trong `src/nodes/n01-sidebar-observer.ts`
+- [x] T007 [US1] Tái cấu trúc bộ bóc tách thẻ hội thoại trong `src/nodes/n01-sidebar-observer.ts` sử dụng selector chuẩn hóa 3 tầng (`anim-data-id`, `div-b16.conv-item-title__name .truncate`, `data-ava-uid`) thay thế các selector giả định cũ
+- [x] T008 [US1] Hiện thực cơ chế Hợp nhất đa tín hiệu (Multi-Signal Fusion: badge counter, dot badge, unread message class, bold time, snippet delta) trong `src/nodes/n01-sidebar-observer.ts`
+- [x] T009 [US1] Hiện thực thuật toán đối chiếu Whitelist `matchWhitelist` theo quy tắc `EXACT` và `CONTAINS` kèm ghi nhận viễn trắc `totalIgnoredNonWhitelist` trong `src/nodes/n01-sidebar-observer.ts`
 
 <checkpoint>
 phase: "Phase 3: User Story 1"
