@@ -147,13 +147,13 @@ exit_condition: "Chức năng khám phá và module UI phẳng src/screens/sideb
 
 ### Tests for User Story 4
 
-- [ ] T018 [P] [US4] Xây dựng bộ test kiểm chứng Auto-Attach timeout 30s và Self-Healing Reconnect khi SPA re-mount trong `tests/unit/n01-sidebar-observer-resilience.test.ts`
+- [x] T018 [P] [US4] Xây dựng bộ test kiểm chứng Auto-Attach timeout 30s và Self-Healing Reconnect khi SPA re-mount trong `tests/unit/n01-sidebar-observer-resilience.test.ts`
 
 ### Implementation for User Story 4
 
-- [ ] T019 [US4] Hoàn thiện cơ chế Auto-Attach và Self-Healing Reconnect (`!document.contains(container)`) với thời gian tái kết nối `<= 500ms` trong `src/nodes/n01-sidebar-observer.ts`
-- [ ] T020 [US4] Hiện thực phát sóng `N01TelemetrySnapshot` qua `BroadcastChannel('n01_telemetry_channel')` đồng bộ 3 trạng thái hàng đợi `IDLE`, `PROCESSING`, `DRAINED` sang `src/screens/sidebar-observer/sidebar-observer.signals.ts` và component `TelemetryStatusCard.tsx` (GATE-N01-05)
-- [ ] T021 [US4] Tích hợp ghi log cấu trúc Wide-Event Telemetry có `correlationId` vào bảng `system_logs` cho mỗi chu kỳ trích xuất và phát hiện nhóm trong `src/nodes/n01-sidebar-observer.ts`
+- [x] T019 [US4] Hoàn thiện cơ chế Auto-Attach và Self-Healing Reconnect (`!document.contains(container)`) với thời gian tái kết nối `<= 500ms` trong `src/nodes/n01-sidebar-observer.ts`
+- [x] T020 [US4] Hiện thực phát sóng `N01TelemetrySnapshot` qua `BroadcastChannel('n01_telemetry_channel')` đồng bộ 3 trạng thái hàng đợi `IDLE`, `PROCESSING`, `DRAINED` sang `src/screens/sidebar-observer/sidebar-observer.signals.ts` và component `TelemetryStatusCard.tsx` (GATE-N01-05)
+- [x] T021 [US4] Tích hợp ghi log cấu trúc Wide-Event Telemetry có `correlationId` vào bảng `system_logs` cho mỗi chu kỳ trích xuất và phát hiện nhóm trong `src/nodes/n01-sidebar-observer.ts`
 
 <checkpoint>
 phase: "Phase 6: User Story 4"

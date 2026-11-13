@@ -97,6 +97,9 @@ export const SidebarObserverScreen: FunctionalComponent<SidebarObserverScreenPro
         totalProcessed={telemetry.value.totalProcessed}
         totalIgnoredNonWhitelist={telemetry.value.totalIgnoredNonWhitelist}
         isObserving={telemetry.value.isObserving}
+        isAttached={telemetry.value.isAttached}
+        queueStatus={telemetry.value.queueStatus}
+        lastActiveTimestamp={telemetry.value.lastActiveTimestamp}
       />
 
       {/* Controls & Filter Bar */}

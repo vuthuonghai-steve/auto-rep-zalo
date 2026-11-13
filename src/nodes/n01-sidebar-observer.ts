@@ -18,6 +18,27 @@ export interface SidebarObserverTelemetry {
   isAttached: boolean;
 }
 
+export type QueueProcessingStatus = 'IDLE' | 'PROCESSING' | 'DRAINED';
+
+export interface QueueItemSnapshot {
+  id?: number | undefined;
+  groupId: string;
+  status: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
+  enqueuedAt: number;
+  retryCount: number;
+}
+
+export interface N01TelemetrySnapshot {
+  queueStatus: QueueProcessingStatus;
+  isObserving: boolean;
+  isAttached: boolean;
+  totalProcessed: number;
+  totalIgnoredNonWhitelist: number;
+  lastActiveTimestamp: number;
+  pendingQueueItems?: QueueItemSnapshot[] | undefined;
+  processingQueueItem?: QueueItemSnapshot | null | undefined;
+}
+
 export interface DebounceStats {
   pendingMutationsCount: number;
   isDebouncing: boolean;
@@ -36,10 +57,12 @@ export interface SidebarObserverOptions {
   onNewMessage: OnNewMessageCallback;
   rootDocument?: Document;
   autoAttachTimeoutMs?: number; // Thời gian chờ tối đa tự động gắn kết (mặc định 30000ms)
+  reconnectCooldownMs?: number; // Thời gian hạ nhiệt tái kết nối Self-Healing (mặc định 500ms)
   emitEventPayload?: boolean; // Tùy chọn ép buộc truyền toàn bộ GroupDetectedEvent vào callback 1 tham số
   debounceMs?: number; // Cửa sổ khử rung gom cụm đột biến DOM (mặc định 300ms)
   maxDebounceBufferMs?: number; // Thời gian tối đa giữ đệm trước khi ép buộc xả tránh starvation (mặc định 1500ms)
   dbInstance?: ZaloAutomationDatabase; // Database instance (mặc định import db từ @/db/database)
+  telemetryChannelName?: string; // Tên kênh BroadcastChannel (mặc định 'n01_telemetry_channel')
 }
 
 export class SidebarObserver {
@@ -71,16 +94,32 @@ export class SidebarObserver {
   private totalEnqueued = 0;
   private totalDedupSkipped = 0;
 
+  // Resilience & Telemetry internals (US4)
+  private container: HTMLElement | null = null;
+  private reconnectCooldownMs: number;
+  private telemetryChannelName: string;
+  private telemetryChannel: BroadcastChannel | null = null;
+  private bodyObserver: MutationObserver | null = null;
+  private healthCheckInterval: ReturnType<typeof setInterval> | null = null;
+  private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  private drainedTimer: ReturnType<typeof setTimeout> | null = null;
+  private queueStatus: QueueProcessingStatus = 'IDLE';
+  private isReconnecting = false;
+  private lastDisconnectTime = 0;
+  private lastActiveTimestamp = Date.now();
+
   constructor(options: SidebarObserverOptions) {
     this.onNewMessage = options.onNewMessage;
     this.doc =
       options.rootDocument ||
       (typeof document !== 'undefined' ? document : (null as unknown as Document));
     this.autoAttachTimeoutMs = options.autoAttachTimeoutMs ?? 30000;
+    this.reconnectCooldownMs = options.reconnectCooldownMs ?? 500;
     this.emitEventPayload = options.emitEventPayload ?? false;
     this.debounceMs = options.debounceMs ?? 300;
     this.maxDebounceBufferMs = options.maxDebounceBufferMs ?? 1500;
     this.db = options.dbInstance ?? defaultDb;
+    this.telemetryChannelName = options.telemetryChannelName ?? 'n01_telemetry_channel';
 
     this.updateWhitelist(options.whitelist);
   }
@@ -179,16 +218,22 @@ export class SidebarObserver {
   start(): boolean {
     if (this.isRunning || !this.doc) return false;
 
+    this.initBroadcastChannel();
+    this.startBodyObserver();
+
     const sidebarContainer = resolveElement(SELECTORS.SIDEBAR_CONVERSATIONS, this.doc);
     if (sidebarContainer) {
       this.attachObserver(sidebarContainer);
       this.isRunning = true;
+      this.startHealthCheck();
+      this.broadcastTelemetry();
       logger.info('SIDEBAR_OBSERVER', 'N01', 'Bắt đầu theo dõi danh sách hội thoại Sidebar');
       return true;
     }
 
     // Nếu chưa có sẵn (React đang tải)
     this.isRunning = true;
+    this.broadcastTelemetry();
     logger.info(
       'SIDEBAR_OBSERVER',
       'N01',
@@ -196,6 +241,7 @@ export class SidebarObserver {
     );
 
     this.startWaitingForSidebar();
+    this.startHealthCheck();
     return true;
   }
 
@@ -204,6 +250,7 @@ export class SidebarObserver {
    */
   stop(): void {
     this.cleanupWaiting();
+    this.stopHealthCheck();
     if (this.debounceTimer) {
       clearTimeout(this.debounceTimer);
       this.debounceTimer = null;
@@ -222,7 +269,14 @@ export class SidebarObserver {
       this.observer.disconnect();
       this.observer = null;
     }
+    this.container = null;
     this.isRunning = false;
+    this.queueStatus = 'IDLE';
+    this.broadcastTelemetry();
+    if (this.telemetryChannel) {
+      this.telemetryChannel.close();
+      this.telemetryChannel = null;
+    }
     logger.info('SIDEBAR_OBSERVER', 'N01', 'Đã dừng theo dõi Sidebar');
   }
 
@@ -234,7 +288,11 @@ export class SidebarObserver {
    * Kiểm tra xem observer đã thực sự được gắn vào phần tử Sidebar hay chưa.
    */
   isAttached(): boolean {
-    return this.observer !== null;
+    return (
+      this.observer !== null &&
+      this.container !== null &&
+      (this.doc ? this.doc.contains(this.container) : true)
+    );
   }
 
   /**
@@ -245,7 +303,7 @@ export class SidebarObserver {
       totalProcessed: this.totalProcessed,
       totalIgnoredNonWhitelist: this.totalIgnoredNonWhitelist,
       isObserving: this.isRunning,
-      isAttached: this.observer !== null,
+      isAttached: this.isAttached(),
     };
   }
 
@@ -281,12 +339,372 @@ export class SidebarObserver {
   }
 
   /**
+   * Khởi tạo kết nối BroadcastChannel để phát sóng viễn trắc.
+   */
+  private initBroadcastChannel(): void {
+    if (this.telemetryChannel) return;
+    try {
+      if (typeof BroadcastChannel !== 'undefined') {
+        this.telemetryChannel = new BroadcastChannel(this.telemetryChannelName);
+      }
+    } catch {
+      this.telemetryChannel = null;
+    }
+  }
+
+  /**
+   * Phát sóng snapshot viễn trắc qua BroadcastChannel.
+   */
+  broadcastTelemetry(customSnapshot?: N01TelemetrySnapshot): void {
+    this.lastActiveTimestamp = Date.now();
+    const snapshot: N01TelemetrySnapshot = customSnapshot || {
+      queueStatus: this.queueStatus,
+      isObserving: this.isRunning,
+      isAttached: this.isAttached(),
+      totalProcessed: this.totalProcessed,
+      totalIgnoredNonWhitelist: this.totalIgnoredNonWhitelist,
+      lastActiveTimestamp: this.lastActiveTimestamp,
+    };
+
+    if (this.telemetryChannel) {
+      try {
+        this.telemetryChannel.postMessage(snapshot);
+      } catch {
+        // Fallback an toàn nếu channel gặp sự cố
+      }
+    }
+  }
+
+  /**
+   * Truy xuất snapshot viễn trắc N01TelemetrySnapshot.
+   */
+  getTelemetrySnapshot(): N01TelemetrySnapshot {
+    return {
+      queueStatus: this.queueStatus,
+      isObserving: this.isRunning,
+      isAttached: this.isAttached(),
+      totalProcessed: this.totalProcessed,
+      totalIgnoredNonWhitelist: this.totalIgnoredNonWhitelist,
+      lastActiveTimestamp: this.lastActiveTimestamp,
+    };
+  }
+
+  /**
+   * Thiết lập thủ công trạng thái hàng đợi viễn trắc.
+   */
+  setQueueStatus(status: QueueProcessingStatus): void {
+    this.queueStatus = status;
+    this.broadcastTelemetry();
+  }
+
+  getQueueStatus(): QueueProcessingStatus {
+    return this.queueStatus;
+  }
+
+  /**
+   * Đồng bộ viễn trắc hàng đợi với Dexie group_dispatch_queue (GATE-N01-05).
+   * Phân tích số lượng PENDING, PROCESSING và tự động chuyển đổi IDLE / PROCESSING / DRAINED.
+   */
+  async syncQueueTelemetry(): Promise<N01TelemetrySnapshot> {
+    if (!this.db) {
+      return this.getTelemetrySnapshot();
+    }
+    try {
+      const pendingItems = await this.db.group_dispatch_queue
+        .where('status')
+        .equals('PENDING')
+        .toArray();
+      const processingItems = await this.db.group_dispatch_queue
+        .where('status')
+        .equals('PROCESSING')
+        .toArray();
+
+      const pendingSnapshots: QueueItemSnapshot[] = pendingItems.map((item) => ({
+        id: item.id,
+        groupId: item.groupId,
+        status: item.status,
+        enqueuedAt: item.enqueuedAt,
+        retryCount: item.retryCount,
+      }));
+
+      const processingSnapshot: QueueItemSnapshot | null = processingItems[0]
+        ? {
+            id: processingItems[0].id,
+            groupId: processingItems[0].groupId,
+            status: processingItems[0].status,
+            enqueuedAt: processingItems[0].enqueuedAt,
+            retryCount: processingItems[0].retryCount,
+          }
+        : null;
+
+      const isBusy =
+        pendingItems.length > 0 || processingItems.length > 0 || this.pendingMutationQueue.size > 0;
+
+      if (isBusy) {
+        if (this.drainedTimer) {
+          clearTimeout(this.drainedTimer);
+          this.drainedTimer = null;
+        }
+        this.queueStatus = 'PROCESSING';
+      } else if (this.queueStatus === 'PROCESSING') {
+        this.queueStatus = 'DRAINED';
+        if (this.drainedTimer) clearTimeout(this.drainedTimer);
+        this.drainedTimer = setTimeout(() => {
+          this.queueStatus = 'IDLE';
+          this.broadcastTelemetry();
+        }, 5000);
+      } else if (this.queueStatus !== 'DRAINED') {
+        this.queueStatus = 'IDLE';
+      }
+
+      const snapshot: N01TelemetrySnapshot = {
+        queueStatus: this.queueStatus,
+        isObserving: this.isRunning,
+        isAttached: this.isAttached(),
+        totalProcessed: this.totalProcessed,
+        totalIgnoredNonWhitelist: this.totalIgnoredNonWhitelist,
+        lastActiveTimestamp: this.lastActiveTimestamp,
+        pendingQueueItems: pendingSnapshots,
+        processingQueueItem: processingSnapshot,
+      };
+
+      this.broadcastTelemetry(snapshot);
+      return snapshot;
+    } catch (error) {
+      logger.error('SIDEBAR_OBSERVER', 'N01', 'Lỗi khi syncQueueTelemetry', error);
+      return this.getTelemetrySnapshot();
+    }
+  }
+
+  /**
+   * Ghi log cấu trúc Wide-Event Telemetry vào Dexie system_logs (T021).
+   */
+  async logWideEvent(params: {
+    operation: 'DETECT_MUTATION' | 'ENQUEUE_DISPATCH' | 'SELF_HEALING_RECONNECT';
+    nodeId?: string;
+    level?: 'INFO' | 'WARN' | 'ERROR' | 'CRITICAL';
+    status?: 'SUCCESS' | 'FAILURE' | 'DEGRADED';
+    durationMs?: number;
+    groupId?: string;
+    senderIdMasked?: string;
+    phoneMasked?: string;
+    message: string;
+    errorPayload?: { code: string; message: string; stack?: string };
+    correlationId?: string;
+  }): Promise<void> {
+    if (!this.db) {
+      return;
+    }
+    try {
+      const now = Date.now();
+      await this.db.system_logs.add({
+        correlationId: params.correlationId || CorrelationContext.generate(),
+        operation: params.operation,
+        nodeId: 'N01_SIDEBAR_OBSERVER',
+        level: params.level || 'INFO',
+        status: params.status || 'SUCCESS',
+        durationMs: params.durationMs ?? 0,
+        groupId: params.groupId || 'GLOBAL',
+        senderIdMasked: params.senderIdMasked || '***',
+        phoneMasked: params.phoneMasked,
+        message: params.message,
+        errorPayload: params.errorPayload,
+        timestamp: now,
+      });
+    } catch (err) {
+      logger.error('SIDEBAR_OBSERVER', 'N01', 'Lỗi khi ghi wide-event vào system_logs', err);
+    }
+  }
+
+  /**
+   * Kiểm tra tính toàn vẹn của container và kích hoạt Self-Healing nếu cần (T019).
+   */
+  checkContainerHealth(): void {
+    if (!this.isRunning || !this.doc) return;
+
+    // Trường hợp 1: Container cũ bị gỡ khỏi DOM (React unmount khi chuyển tab)
+    if (this.container && (!this.doc.contains(this.container) || !this.container.isConnected)) {
+      this.handleContainerDisconnected();
+      return;
+    }
+
+    // Trường hợp 2: Đang chờ container mới xuất hiện để tái gắn kết
+    if (!this.container && (this.isReconnecting || this.waitingObserver !== null)) {
+      const found = resolveElement(SELECTORS.SIDEBAR_CONVERSATIONS, this.doc);
+      if (found) {
+        if (this.isReconnecting) {
+          this.handleContainerReconnected(found);
+        } else {
+          this.cleanupWaiting();
+          this.attachObserver(found);
+          this.scanExisting();
+          this.broadcastTelemetry();
+        }
+      }
+    }
+  }
+
+  /**
+   * Xử lý sự kiện container Sidebar bị mất khỏi DOM (SPA tab switch / re-mount).
+   */
+  handleContainerDisconnected(): void {
+    if (!this.isRunning) return;
+    this.lastDisconnectTime = Date.now();
+    this.isReconnecting = true;
+
+    if (this.observer) {
+      this.observer.disconnect();
+      this.observer = null;
+    }
+    this.container = null;
+
+    logger.warn(
+      'SIDEBAR_OBSERVER',
+      'N01',
+      '[N01] Phát hiện container Sidebar bị gỡ khỏi DOM (SPA tab switch / re-mount). Đang kích hoạt Self-Healing Reconnect...',
+    );
+
+    void this.logWideEvent({
+      operation: 'SELF_HEALING_RECONNECT',
+      level: 'WARN',
+      status: 'DEGRADED',
+      groupId: 'SYSTEM',
+      senderIdMasked: 'SYSTEM',
+      message: 'Sidebar container bị gỡ khỏi DOM. Kích hoạt Self-Healing Reconnect...',
+    });
+
+    this.broadcastTelemetry();
+    this.scheduleSelfHealingReconnect();
+  }
+
+  /**
+   * Xử lý tái gắn kết thành công khi container mới xuất hiện trên DOM trong <= 500ms.
+   */
+  handleContainerReconnected(newContainer: HTMLElement): void {
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+
+    const duration = this.lastDisconnectTime > 0 ? Date.now() - this.lastDisconnectTime : 0;
+    this.isReconnecting = false;
+    this.attachObserver(newContainer);
+    this.scanExisting();
+
+    logger.info(
+      'SIDEBAR_OBSERVER',
+      'N01',
+      `[N01] Self-Healing: Tái gắn kết thành công với Sidebar container mới trong ${duration}ms.`,
+    );
+
+    void this.logWideEvent({
+      operation: 'SELF_HEALING_RECONNECT',
+      level: 'INFO',
+      status: 'SUCCESS',
+      durationMs: duration,
+      groupId: 'SYSTEM',
+      senderIdMasked: 'SYSTEM',
+      message: `Tái gắn kết Self-Healing thành công với Sidebar container mới trong ${duration}ms`,
+    });
+
+    this.broadcastTelemetry();
+  }
+
+  /**
+   * Lập lịch vòng lặp tái gắn kết Self-Healing định kỳ <= 500ms.
+   */
+  private scheduleSelfHealingReconnect(): void {
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+
+    const tryReconnect = () => {
+      if (!this.isRunning) return;
+      const found = resolveElement(SELECTORS.SIDEBAR_CONVERSATIONS, this.doc);
+      if (found) {
+        this.handleContainerReconnected(found);
+      } else {
+        this.reconnectTimer = setTimeout(tryReconnect, this.reconnectCooldownMs);
+      }
+    };
+
+    // Kiểm tra ngay lập tức xem đã có container mới chưa
+    const immediateFound = resolveElement(SELECTORS.SIDEBAR_CONVERSATIONS, this.doc);
+    if (immediateFound) {
+      this.handleContainerReconnected(immediateFound);
+    } else {
+      this.reconnectTimer = setTimeout(tryReconnect, Math.min(100, this.reconnectCooldownMs));
+    }
+  }
+
+  /**
+   * Kích hoạt MutationObserver trên document.body để phát hiện thay đổi cấu trúc DOM.
+   */
+  private startBodyObserver(): void {
+    const root = this.doc?.body || this.doc?.documentElement;
+    if (!root || typeof MutationObserver === 'undefined') return;
+
+    if (this.bodyObserver) {
+      this.bodyObserver.disconnect();
+    }
+
+    this.bodyObserver = new MutationObserver(() => {
+      this.checkContainerHealth();
+    });
+
+    this.bodyObserver.observe(root, {
+      childList: true,
+      subtree: true,
+    });
+  }
+
+  /**
+   * Kích hoạt kiểm tra sức khỏe container định kỳ (Health Check polling).
+   */
+  private startHealthCheck(): void {
+    if (this.healthCheckInterval) {
+      clearInterval(this.healthCheckInterval);
+    }
+
+    this.healthCheckInterval = setInterval(
+      () => this.checkContainerHealth(),
+      Math.min(200, this.reconnectCooldownMs),
+    );
+  }
+
+  /**
+   * Dừng kiểm tra sức khỏe và dọn dẹp body observer.
+   */
+  private stopHealthCheck(): void {
+    if (this.healthCheckInterval) {
+      clearInterval(this.healthCheckInterval);
+      this.healthCheckInterval = null;
+    }
+    if (this.bodyObserver) {
+      this.bodyObserver.disconnect();
+      this.bodyObserver = null;
+    }
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+    if (this.drainedTimer) {
+      clearTimeout(this.drainedTimer);
+      this.drainedTimer = null;
+    }
+    this.isReconnecting = false;
+  }
+
+  /**
    * Gắn MutationObserver chính thức lên phần tử Sidebar Container.
    */
   private attachObserver(container: HTMLElement): void {
     if (this.observer) {
       this.observer.disconnect();
     }
+
+    this.container = container;
 
     this.observer = new MutationObserver((mutations) => {
       this.handleMutations(mutations);
@@ -313,6 +731,7 @@ export class SidebarObserver {
           this.cleanupWaiting();
           this.attachObserver(found);
           this.scanExisting();
+          this.broadcastTelemetry();
           logger.info(
             'SIDEBAR_OBSERVER',
             'N01',
@@ -336,6 +755,8 @@ export class SidebarObserver {
           `[N01] Hết thời gian chờ (${this.autoAttachTimeoutMs}ms). Không tìm thấy phần tử SIDEBAR_CONVERSATIONS trên DOM. Hủy chế độ Auto-Attach.`,
         );
         this.cleanupWaiting();
+        this.isRunning = false;
+        this.broadcastTelemetry();
       }
     }, this.autoAttachTimeoutMs);
   }
@@ -447,6 +868,18 @@ export class SidebarObserver {
           `[N01] Idempotent deduplication: Cập nhật enqueuedAt cho nhóm ${groupId} (id=${existing.id}, status=${existing.status})`,
           { groupId },
         );
+        void this.logWideEvent({
+          correlationId: _event?.correlationId || CorrelationContext.generate(),
+          operation: 'ENQUEUE_DISPATCH',
+          nodeId: 'N01_SIDEBAR_OBSERVER',
+          level: 'INFO',
+          status: 'SUCCESS',
+          durationMs: 0,
+          groupId,
+          senderIdMasked: _event?.senderName || '***',
+          message: `Idempotent deduplication: Cập nhật enqueuedAt cho nhóm ${groupId} (id=${existing.id}, status=${existing.status})`,
+        });
+        void this.syncQueueTelemetry();
         return existing.id;
       }
 
@@ -464,6 +897,19 @@ export class SidebarObserver {
         `[N01] Đã thêm nhóm vào group_dispatch_queue: ${groupId} (id=${newId})`,
         { groupId },
       );
+
+      void this.logWideEvent({
+        correlationId: _event?.correlationId || CorrelationContext.generate(),
+        operation: 'ENQUEUE_DISPATCH',
+        nodeId: 'N01_SIDEBAR_OBSERVER',
+        level: 'INFO',
+        status: 'SUCCESS',
+        durationMs: 0,
+        groupId,
+        senderIdMasked: _event?.senderName || '***',
+        message: `Đã thêm nhóm vào group_dispatch_queue: ${groupId} (id=${newId})`,
+      });
+      void this.syncQueueTelemetry();
 
       return newId;
     } catch (error) {
@@ -556,6 +1002,18 @@ export class SidebarObserver {
         groupId,
       },
     );
+
+    void this.logWideEvent({
+      correlationId: event.correlationId,
+      operation: 'DETECT_MUTATION',
+      nodeId: 'N01_SIDEBAR_OBSERVER',
+      level: 'INFO',
+      status: 'SUCCESS',
+      durationMs: 0,
+      groupId: event.groupId,
+      senderIdMasked: event.senderName || '***',
+      message: `Phát hiện tin nhắn mới trong nhóm Whitelist: ${event.groupId} (${event.groupName}) [unread=${event.unreadCount}]`,
+    });
 
     // Khởi chạy Idempotent Enqueueing trước khi phát sự kiện callback (GATE-N01-03)
     const enqueuePromise = this.enqueueGroup(groupId, event);
