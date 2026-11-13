@@ -1,0 +1,94 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AIFirstDocumentSchema",
+  "description": "JSON Schema định nghĩa cấu trúc tài liệu AI-First chuẩn mực tuân thủ AI-First Triad Protocol và Docs/Steve/Standards.md",
+  "type": "object",
+  "required": [
+    "macro_envelope",
+    "yaml_constraints",
+    "portability_and_linking",
+    "negative_space"
+  ],
+  "properties": {
+    "macro_envelope": {
+      "type": "object",
+      "description": "Ranh giới vĩ mô bằng thẻ XML cô lập chỉ thị, bối cảnh và nghiệm thu",
+      "required": ["instructions", "context", "output_contract", "balanced_tags"],
+      "properties": {
+        "instructions": {
+          "type": "boolean",
+          "description": "Có chứa cặp thẻ mở/đóng <instructions>...</instructions>"
+        },
+        "context": {
+          "type": "boolean",
+          "description": "Có chứa cặp thẻ mở/đóng <context>...</context>"
+        },
+        "output_contract": {
+          "type": "boolean",
+          "description": "Có chứa cặp thẻ mở/đóng <output_contract>...</output_contract>"
+        },
+        "balanced_tags": {
+          "type": "boolean",
+          "description": "Toàn bộ các thẻ XML vĩ mô phải cân bằng tuyệt đối giữa mở và đóng"
+        },
+        "distinct_tag_count": {
+          "type": "integer",
+          "maximum": 12,
+          "description": "Chống micro-tagging: Tổng số lượng thẻ XML phân biệt trong toàn bộ tài liệu <= 12"
+        }
+      },
+      "additionalProperties": false
+    },
+    "yaml_constraints": {
+      "type": "object",
+      "description": "Định dạng cấu trúc YAML mã hóa quy tắc và cấu hình",
+      "required": ["syntax_valid", "max_nesting_depth"],
+      "properties": {
+        "syntax_valid": {
+          "type": "boolean",
+          "description": "Cú pháp của mọi khối YAML phải hợp lệ và parse được"
+        },
+        "max_nesting_depth": {
+          "type": "integer",
+          "maximum": 3,
+          "description": "Độ sâu thụt lề lồng nhau của YAML không vượt quá 3 cấp (tối đa 6 spaces)"
+        }
+      },
+      "additionalProperties": false
+    },
+    "portability_and_linking": {
+      "type": "object",
+      "description": "Quy chuẩn tính di động và liên kết tệp",
+      "required": ["clickable_relative_links", "zero_hardcoded_absolute_paths", "no_backticks_in_link_text"],
+      "properties": {
+        "clickable_relative_links": {
+          "type": "boolean",
+          "description": "Toàn bộ link tệp phải là liên kết tương đối chuẩn Markdown: [Tên](path)"
+        },
+        "zero_hardcoded_absolute_paths": {
+          "type": "boolean",
+          "description": "Tuyệt đối không chứa absolute path cục bộ của máy cá nhân (C:\\, /home/, /Users/)"
+        },
+        "no_backticks_in_link_text": {
+          "type": "boolean",
+          "description": "Cấm bọc backtick bên trong nhãn hiển thị của link (không dùng [`file`](path))"
+        }
+      },
+      "additionalProperties": false
+    },
+    "negative_space": {
+      "type": "object",
+      "description": "Định nghĩa không gian ranh giới cấm",
+      "required": ["must_not_count"],
+      "properties": {
+        "must_not_count": {
+          "type": "integer",
+          "minimum": 3,
+          "description": "Tối thiểu 3 điều cấm cụ thể (must_not >= 3) để triệt tiêu Semantic Void"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

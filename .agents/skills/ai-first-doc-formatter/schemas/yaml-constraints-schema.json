@@ -1,0 +1,38 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "YamlConstraintsSchema",
+  "description": "JSON Schema kiểm tra cấu trúc các khối YAML nhúng trong tài liệu AI-First để đảm bảo tính xác định và độ sâu chuẩn",
+  "type": "object",
+  "required": [
+    "max_indentation_spaces",
+    "max_depth_levels",
+    "required_sections"
+  ],
+  "properties": {
+    "max_indentation_spaces": {
+      "type": "integer",
+      "maximum": 6,
+      "description": "Khoảng trắng thụt lề tối đa cho phép ở đầu dòng của một block YAML là 6 spaces"
+    },
+    "max_depth_levels": {
+      "type": "integer",
+      "maximum": 3,
+      "description": "Độ sâu phân cấp key-value tối đa là 3 cấp lồng nhau"
+    },
+    "required_sections": {
+      "type": "array",
+      "description": "Các trường tối thiểu thường xuất hiện trong khối YAML của tài liệu AI-First",
+      "items": {
+        "type": "string"
+      }
+    },
+    "forbidden_keys": {
+      "type": "array",
+      "description": "Các từ khóa cấm hoặc phản ánh sự mơ hồ",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "additionalProperties": false
+}
