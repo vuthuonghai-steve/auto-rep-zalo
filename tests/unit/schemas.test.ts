@@ -1,4 +1,3 @@
-import { describe, expect, it } from 'vitest';
 import {
   DiscoveredGroupItemSchema,
   GroupDetectedEventSchema,
@@ -6,6 +5,7 @@ import {
   WhitelistGroupItemSchema,
   WhitelistMatchingRuleSchema,
 } from '@/contracts/schemas';
+import { describe, expect, it } from 'vitest';
 
 describe('Node 01 Zod Schemas Contract (tests/unit/schemas.test.ts)', () => {
   describe('WhitelistMatchingRuleSchema', () => {
@@ -45,7 +45,10 @@ describe('Node 01 Zod Schemas Contract (tests/unit/schemas.test.ts)', () => {
       expect(parsed.addedAt).toBe(1731456000000);
       expect(parsed.lastUpdatedAt).toBe(1731456000000);
 
-      console.log('[SNAPSHOT - WhitelistGroupItemSchema nominal]:', JSON.stringify(parsed, null, 2));
+      console.log(
+        '[SNAPSHOT - WhitelistGroupItemSchema nominal]:',
+        JSON.stringify(parsed, null, 2),
+      );
       expect(parsed).toMatchInlineSnapshot(`
         {
           "addedAt": 1731456000000,
@@ -84,7 +87,7 @@ describe('Node 01 Zod Schemas Contract (tests/unit/schemas.test.ts)', () => {
           matchingRule: 'EXACT',
           addedAt: 1000,
           lastUpdatedAt: 1000,
-        })
+        }),
       ).toThrow();
 
       // Empty groupName
@@ -95,7 +98,7 @@ describe('Node 01 Zod Schemas Contract (tests/unit/schemas.test.ts)', () => {
           matchingRule: 'EXACT',
           addedAt: 1000,
           lastUpdatedAt: 1000,
-        })
+        }),
       ).toThrow();
 
       // Priority out of bounds (> 5)
@@ -107,7 +110,7 @@ describe('Node 01 Zod Schemas Contract (tests/unit/schemas.test.ts)', () => {
           priority: 6,
           addedAt: 1000,
           lastUpdatedAt: 1000,
-        })
+        }),
       ).toThrow();
 
       // Priority out of bounds (< 1)
@@ -119,7 +122,7 @@ describe('Node 01 Zod Schemas Contract (tests/unit/schemas.test.ts)', () => {
           priority: 0,
           addedAt: 1000,
           lastUpdatedAt: 1000,
-        })
+        }),
       ).toThrow();
 
       // Non-positive timestamp
@@ -130,7 +133,7 @@ describe('Node 01 Zod Schemas Contract (tests/unit/schemas.test.ts)', () => {
           matchingRule: 'EXACT',
           addedAt: -500,
           lastUpdatedAt: 1000,
-        })
+        }),
       ).toThrow();
     });
   });
@@ -152,7 +155,10 @@ describe('Node 01 Zod Schemas Contract (tests/unit/schemas.test.ts)', () => {
       expect(parsed.lastSnippet).toBeUndefined();
       expect(parsed.isInWhitelist).toBe(false);
 
-      console.log('[SNAPSHOT - DiscoveredGroupItemSchema nominal]:', JSON.stringify(parsed, null, 2));
+      console.log(
+        '[SNAPSHOT - DiscoveredGroupItemSchema nominal]:',
+        JSON.stringify(parsed, null, 2),
+      );
       expect(parsed).toMatchInlineSnapshot(`
         {
           "groupId": "g1206626154231863388",
@@ -189,7 +195,7 @@ describe('Node 01 Zod Schemas Contract (tests/unit/schemas.test.ts)', () => {
         DiscoveredGroupItemSchema.parse({
           groupId: '',
           groupName: 'Name',
-        })
+        }),
       ).toThrow();
 
       // Negative unreadCount
@@ -198,7 +204,7 @@ describe('Node 01 Zod Schemas Contract (tests/unit/schemas.test.ts)', () => {
           groupId: 'g123',
           groupName: 'Name',
           unreadCount: -1,
-        })
+        }),
       ).toThrow();
     });
   });
@@ -226,7 +232,10 @@ describe('Node 01 Zod Schemas Contract (tests/unit/schemas.test.ts)', () => {
       expect(parsed.correlationId).toBe('corr_1731456100000_abc123');
       expect(parsed.isCommunity).toBe(false); // default
 
-      console.log('[SNAPSHOT - GroupDetectedEventSchema nominal]:', JSON.stringify(parsed, null, 2));
+      console.log(
+        '[SNAPSHOT - GroupDetectedEventSchema nominal]:',
+        JSON.stringify(parsed, null, 2),
+      );
       expect(parsed).toMatchInlineSnapshot(`
         {
           "correlationId": "corr_1731456100000_abc123",
@@ -249,7 +258,7 @@ describe('Node 01 Zod Schemas Contract (tests/unit/schemas.test.ts)', () => {
           groupName: 'Name',
           unreadCount: 1,
           detectedAt: 1731456000000,
-        })
+        }),
       ).toThrow();
 
       // Empty correlationId
@@ -260,7 +269,7 @@ describe('Node 01 Zod Schemas Contract (tests/unit/schemas.test.ts)', () => {
           unreadCount: 1,
           detectedAt: 1731456000000,
           correlationId: '',
-        })
+        }),
       ).toThrow();
 
       // Non-positive detectedAt
@@ -271,7 +280,7 @@ describe('Node 01 Zod Schemas Contract (tests/unit/schemas.test.ts)', () => {
           unreadCount: 1,
           detectedAt: 0,
           correlationId: 'corr_test',
-        })
+        }),
       ).toThrow();
     });
   });
