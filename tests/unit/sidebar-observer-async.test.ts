@@ -65,7 +65,8 @@ describe('SidebarObserver Auto-Attach & Delayed DOM Mount (tests/unit/sidebar-ob
     document.body.appendChild(sidebarContainer);
 
     // Chờ một khoảng ngắn để MutationObserver kích hoạt callback
-    await new Promise((resolve) => setTimeout(resolve, 30));
+    // Chờ cửa sổ khử rung debounce (300ms) kích hoạt callback
+    await new Promise((resolve) => setTimeout(resolve, 350));
 
     expect(observer.isAttached()).toBe(true);
     expect(onNewMsg).toHaveBeenCalledWith('group-test-delayed');
@@ -76,7 +77,8 @@ describe('SidebarObserver Auto-Attach & Delayed DOM Mount (tests/unit/sidebar-ob
     dot.className = 'unread-red-dot';
     item.appendChild(dot);
 
-    await new Promise((resolve) => setTimeout(resolve, 30));
+    // Chờ cửa sổ khử rung debounce (300ms) kích hoạt callback
+    await new Promise((resolve) => setTimeout(resolve, 350));
     expect(onNewMsg).toHaveBeenCalledTimes(2);
 
     observer.stop();
@@ -110,7 +112,8 @@ describe('SidebarObserver Auto-Attach & Delayed DOM Mount (tests/unit/sidebar-ob
       '<div class="conv-item" data-id="group-test"><span class="unread-badge">5</span></div>';
     document.body.appendChild(sidebar);
 
-    await new Promise((resolve) => setTimeout(resolve, 30));
+    // Chờ cửa sổ khử rung debounce (300ms) kích hoạt callback
+    await new Promise((resolve) => setTimeout(resolve, 350));
     expect(observer.isAttached()).toBe(false);
     expect(onNewMsg).not.toHaveBeenCalled();
   });

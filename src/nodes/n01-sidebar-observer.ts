@@ -1,5 +1,6 @@
 import type { GroupDetectedEvent, WhitelistGroupItem } from '@/contracts/schemas';
 import { SELECTORS, resolveElement } from '@/contracts/selectors';
+import { type ZaloAutomationDatabase, db as defaultDb } from '@/db/database';
 import { extractUnreadBadge } from '@/utils/badge-extractor';
 import { CorrelationContext } from '@/utils/correlation';
 import { logger } from '@/utils/logger';
@@ -10,6 +11,14 @@ export interface SidebarObserverTelemetry {
   totalIgnoredNonWhitelist: number;
   isObserving: boolean;
   isAttached: boolean;
+}
+
+export interface DebounceStats {
+  pendingMutationsCount: number;
+  isDebouncing: boolean;
+  totalDebouncedRuns: number;
+  totalEnqueued: number;
+  totalDedupSkipped: number;
 }
 
 export type OnNewMessageCallback =
@@ -23,6 +32,9 @@ export interface SidebarObserverOptions {
   rootDocument?: Document;
   autoAttachTimeoutMs?: number; // Thời gian chờ tối đa tự động gắn kết (mặc định 30000ms)
   emitEventPayload?: boolean; // Tùy chọn ép buộc truyền toàn bộ GroupDetectedEvent vào callback 1 tham số
+  debounceMs?: number; // Cửa sổ khử rung gom cụm đột biến DOM (mặc định 300ms)
+  maxDebounceBufferMs?: number; // Thời gian tối đa giữ đệm trước khi ép buộc xả tránh starvation (mặc định 1500ms)
+  dbInstance?: ZaloAutomationDatabase; // Database instance (mặc định import db từ @/db/database)
 }
 
 export class SidebarObserver {
@@ -37,10 +49,22 @@ export class SidebarObserver {
   private doc: Document;
   private autoAttachTimeoutMs: number;
   private emitEventPayload: boolean;
+  private debounceMs: number;
+  private maxDebounceBufferMs: number;
+  private db: ZaloAutomationDatabase;
+
+  // Debounce buffer internals
+  private debounceTimer: ReturnType<typeof setTimeout> | null = null;
+  private firstDebounceMutationTime: number | null = null;
+  private pendingMutationQueue: Set<HTMLElement> = new Set();
+  private rafId: number | ReturnType<typeof setTimeout> | null = null;
 
   // Telemetry metrics
   private totalProcessed = 0;
   private totalIgnoredNonWhitelist = 0;
+  private totalDebouncedRuns = 0;
+  private totalEnqueued = 0;
+  private totalDedupSkipped = 0;
 
   constructor(options: SidebarObserverOptions) {
     this.onNewMessage = options.onNewMessage;
@@ -49,6 +73,9 @@ export class SidebarObserver {
       (typeof document !== 'undefined' ? document : (null as unknown as Document));
     this.autoAttachTimeoutMs = options.autoAttachTimeoutMs ?? 30000;
     this.emitEventPayload = options.emitEventPayload ?? false;
+    this.debounceMs = options.debounceMs ?? 300;
+    this.maxDebounceBufferMs = options.maxDebounceBufferMs ?? 1500;
+    this.db = options.dbInstance ?? defaultDb;
 
     this.updateWhitelist(options.whitelist);
   }
@@ -168,10 +195,24 @@ export class SidebarObserver {
   }
 
   /**
-   * Dừng theo dõi và giải phóng observer.
+   * Dừng theo dõi và giải phóng observer và debounce timers.
    */
   stop(): void {
     this.cleanupWaiting();
+    if (this.debounceTimer) {
+      clearTimeout(this.debounceTimer);
+      this.debounceTimer = null;
+    }
+    if (this.rafId !== null) {
+      if (typeof cancelAnimationFrame === 'function' && typeof this.rafId === 'number') {
+        cancelAnimationFrame(this.rafId);
+      } else {
+        clearTimeout(this.rafId as ReturnType<typeof setTimeout>);
+      }
+      this.rafId = null;
+    }
+    this.pendingMutationQueue.clear();
+    this.firstDebounceMutationTime = null;
     if (this.observer) {
       this.observer.disconnect();
       this.observer = null;
@@ -211,11 +252,27 @@ export class SidebarObserver {
   }
 
   /**
+   * Truy xuất thống kê cơ chế gom cụm Debounce và hàng đợi Dexie (T011 & T012).
+   */
+  getDebounceStats(): DebounceStats {
+    return {
+      pendingMutationsCount: this.pendingMutationQueue.size,
+      isDebouncing: this.debounceTimer !== null,
+      totalDebouncedRuns: this.totalDebouncedRuns,
+      totalEnqueued: this.totalEnqueued,
+      totalDedupSkipped: this.totalDedupSkipped,
+    };
+  }
+
+  /**
    * Đặt lại bộ đếm viễn trắc.
    */
   resetTelemetry(): void {
     this.totalProcessed = 0;
     this.totalIgnoredNonWhitelist = 0;
+    this.totalDebouncedRuns = 0;
+    this.totalEnqueued = 0;
+    this.totalDedupSkipped = 0;
   }
 
   /**
@@ -357,9 +414,69 @@ export class SidebarObserver {
   }
 
   /**
-   * Bóc tách và xử lý logic cho một thẻ hội thoại (thỏa mãn T007 & T008 & T009).
+   * Khử trùng lặp lũy đẳng (Idempotent Enqueueing - GATE-N01-03):
+   * Ghi nhận nhóm vào bảng Dexie `group_dispatch_queue`.
+   * Nếu nhóm đã có bản ghi ở trạng thái PENDING hoặc PROCESSING:
+   *   -> Cập nhật timestamp enqueuedAt (Zero duplicate record).
+   * Nếu chưa có (hoặc bản ghi cũ đã COMPLETED / FAILED):
+   *   -> Thêm bản ghi mới với trạng thái PENDING.
    */
-  private processItemElement(itemElement: HTMLElement): void {
+  async enqueueGroup(groupId: string, _event?: GroupDetectedEvent): Promise<number | undefined> {
+    try {
+      const existing = await this.db.group_dispatch_queue
+        .where('groupId')
+        .equals(groupId)
+        .and((item) => item.status === 'PENDING' || item.status === 'PROCESSING')
+        .first();
+
+      const now = Date.now();
+
+      if (existing && existing.id !== undefined) {
+        this.totalDedupSkipped++;
+        await this.db.group_dispatch_queue.update(existing.id, {
+          enqueuedAt: now,
+        });
+        logger.info(
+          'SIDEBAR_OBSERVER',
+          'N01',
+          `[N01] Idempotent deduplication: Cập nhật enqueuedAt cho nhóm ${groupId} (id=${existing.id}, status=${existing.status})`,
+          { groupId },
+        );
+        return existing.id;
+      }
+
+      this.totalEnqueued++;
+      const newId = await this.db.group_dispatch_queue.add({
+        groupId,
+        status: 'PENDING',
+        retryCount: 0,
+        enqueuedAt: now,
+      });
+
+      logger.info(
+        'SIDEBAR_OBSERVER',
+        'N01',
+        `[N01] Đã thêm nhóm vào group_dispatch_queue: ${groupId} (id=${newId})`,
+        { groupId },
+      );
+
+      return newId;
+    } catch (error) {
+      logger.error(
+        'SIDEBAR_OBSERVER',
+        'N01',
+        `[N01] Lỗi khi enqueueGroup vào Dexie: ${error instanceof Error ? error.message : String(error)}`,
+        error,
+        { groupId },
+      );
+      return undefined;
+    }
+  }
+
+  /**
+   * Bóc tách và xử lý logic cho một thẻ hội thoại (thỏa mãn T007 & T008 & T009 & T012).
+   */
+  private async processItemElement(itemElement: HTMLElement): Promise<void> {
     const groupId = this.extractGroupId(itemElement);
     if (!groupId) {
       return;
@@ -435,7 +552,10 @@ export class SidebarObserver {
       },
     );
 
+    // Khởi chạy Idempotent Enqueueing trước khi phát sự kiện callback (GATE-N01-03)
+    const enqueuePromise = this.enqueueGroup(groupId, event);
     this.emitNewMessage(event);
+    await enqueuePromise;
   }
 
   /**
@@ -476,19 +596,109 @@ export class SidebarObserver {
   }
 
   /**
-   * Quét và xử lý các đột biến DOM trong danh sách hội thoại.
+   * Quét và gom cụm các đột biến DOM trong danh sách hội thoại qua Debounce Buffer (GATE-N01-01).
    */
   private handleMutations(mutations: MutationRecord[]): void {
-    const seenItems = new Set<HTMLElement>();
+    let hasNewItems = false;
     for (const mutation of mutations) {
       const target = mutation.target as HTMLElement;
       if (!target || typeof target.closest !== 'function') continue;
 
       const convItem = this.findSidebarItem(target);
-      if (convItem && !seenItems.has(convItem)) {
-        seenItems.add(convItem);
-        this.processItemElement(convItem);
+      if (convItem) {
+        this.pendingMutationQueue.add(convItem);
+        hasNewItems = true;
       }
+    }
+
+    if (!hasNewItems && this.pendingMutationQueue.size === 0) {
+      return;
+    }
+
+    const now = Date.now();
+    if (this.firstDebounceMutationTime === null) {
+      this.firstDebounceMutationTime = now;
+    }
+
+    const elapsed = now - this.firstDebounceMutationTime;
+    if (elapsed >= this.maxDebounceBufferMs) {
+      if (this.debounceTimer) {
+        clearTimeout(this.debounceTimer);
+        this.debounceTimer = null;
+      }
+      this.scheduleFlushChunk();
+      return;
+    }
+
+    if (this.debounceTimer) {
+      clearTimeout(this.debounceTimer);
+      this.debounceTimer = null;
+    }
+
+    const remainingMaxTime = this.maxDebounceBufferMs - elapsed;
+    const delay = Math.max(0, Math.min(this.debounceMs, remainingMaxTime));
+
+    this.debounceTimer = setTimeout(() => {
+      this.debounceTimer = null;
+      this.scheduleFlushChunk();
+    }, delay);
+  }
+
+  /**
+   * Lập lịch xử lý lô thẻ hội thoại đã gom cụm qua requestAnimationFrame hoặc setTimeout fallback.
+   */
+  private scheduleFlushChunk(): void {
+    this.firstDebounceMutationTime = null;
+    if (this.pendingMutationQueue.size === 0) {
+      return;
+    }
+
+    const items = Array.from(this.pendingMutationQueue);
+    this.pendingMutationQueue.clear();
+    this.totalDebouncedRuns++;
+
+    const runChunk = () => {
+      this.rafId = null;
+      for (const item of items) {
+        void this.processItemElement(item);
+      }
+    };
+
+    if (typeof requestAnimationFrame === 'function') {
+      this.rafId = requestAnimationFrame(runChunk);
+    } else {
+      this.rafId = setTimeout(runChunk, 0);
+    }
+  }
+
+  /**
+   * Ép buộc xả toàn bộ hàng đợi đột biến đang chờ xử lý (phục vụ kiểm thử & dọn dẹp).
+   */
+  async flushPendingMutations(): Promise<void> {
+    if (this.debounceTimer) {
+      clearTimeout(this.debounceTimer);
+      this.debounceTimer = null;
+    }
+    if (this.rafId !== null) {
+      if (typeof cancelAnimationFrame === 'function' && typeof this.rafId === 'number') {
+        cancelAnimationFrame(this.rafId);
+      } else {
+        clearTimeout(this.rafId as ReturnType<typeof setTimeout>);
+      }
+      this.rafId = null;
+    }
+    this.firstDebounceMutationTime = null;
+
+    if (this.pendingMutationQueue.size === 0) {
+      return;
+    }
+
+    const items = Array.from(this.pendingMutationQueue);
+    this.pendingMutationQueue.clear();
+    this.totalDebouncedRuns++;
+
+    for (const item of items) {
+      await this.processItemElement(item);
     }
   }
 
