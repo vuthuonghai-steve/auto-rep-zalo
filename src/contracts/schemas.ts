@@ -98,3 +98,53 @@ export const EntityBundleSchema = z.object({
   createdAt: z.number().int().positive(),
 });
 export type EntityBundle = z.infer<typeof EntityBundleSchema>;
+
+// ==========================================
+// Node 01: Sidebar Observer & Whitelist Ingestion Schemas
+// ==========================================
+
+export const WhitelistMatchingRuleSchema = z.enum(['EXACT', 'CONTAINS']);
+export type WhitelistMatchingRule = z.infer<typeof WhitelistMatchingRuleSchema>;
+
+export const WhitelistGroupItemSchema = z.object({
+  groupId: z.string().min(1),
+  groupName: z.string().min(1),
+  matchingRule: WhitelistMatchingRuleSchema,
+  priority: z.number().int().min(1).max(5).default(1),
+  isEnabled: z.boolean().default(true),
+  addedAt: z.number().int().positive(),
+  lastUpdatedAt: z.number().int().positive(),
+});
+export type WhitelistGroupItem = z.infer<typeof WhitelistGroupItemSchema>;
+
+export const DiscoveredGroupItemSchema = z.object({
+  groupId: z.string().min(1),
+  groupName: z.string(),
+  avatarUrl: z.string().optional(),
+  isCommunity: z.boolean().default(false),
+  unreadCount: z.number().int().nonnegative().default(0),
+  lastSnippet: z.string().optional(),
+  isInWhitelist: z.boolean().default(false),
+});
+export type DiscoveredGroupItem = z.infer<typeof DiscoveredGroupItemSchema>;
+
+export const GroupDetectedEventSchema = z.object({
+  groupId: z.string().min(1),
+  groupName: z.string(),
+  unreadCount: z.number().int().nonnegative(),
+  lastSnippet: z.string().optional(),
+  senderName: z.string().optional(),
+  detectedAt: z.number().int().positive(),
+  correlationId: z.string().min(1),
+  isCommunity: z.boolean().default(false),
+});
+export type GroupDetectedEvent = z.infer<typeof GroupDetectedEventSchema>;
+
+export const N01ConfigSchema = z.object({
+  debounceMs: z.number().int().positive().default(300),
+  maxDebounceBufferMs: z.number().int().positive().default(1500),
+  autoAttachTimeoutMs: z.number().int().positive().default(30000),
+  reconnectCooldownMs: z.number().int().positive().default(500),
+});
+export type N01Config = z.infer<typeof N01ConfigSchema>;
+
