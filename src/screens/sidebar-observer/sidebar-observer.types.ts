@@ -12,6 +12,8 @@ import type {
 
 export type GroupFilter = 'ALL' | 'WHITELISTED' | 'NON_WHITELISTED';
 
+export type QueueTelemetryStatus = 'IDLE' | 'PROCESSING' | 'DRAINED';
+
 export interface DrawerState {
   isOpen: boolean;
 }
@@ -22,6 +24,9 @@ export interface SidebarObserverTelemetryStats {
   totalIgnoredNonWhitelist: number;
   totalProcessed: number;
   isObserving: boolean;
+  isAttached?: boolean | undefined;
+  queueStatus?: QueueTelemetryStatus | undefined;
+  lastActiveTimestamp?: number | undefined;
 }
 
 export interface SidebarObserverUIState {
@@ -48,8 +53,11 @@ export interface WhitelistDrawerProps {
 
 export interface TelemetryStatusCardProps {
   totalWatchedGroups: number;
-  totalDiscoveredGroups?: number;
-  totalProcessed?: number;
-  totalIgnoredNonWhitelist?: number;
-  isObserving?: boolean;
+  totalDiscoveredGroups?: number | undefined;
+  totalProcessed?: number | undefined;
+  totalIgnoredNonWhitelist?: number | undefined;
+  isObserving?: boolean | undefined;
+  isAttached?: boolean | undefined;
+  queueStatus?: QueueTelemetryStatus | undefined;
+  lastActiveTimestamp?: number | undefined;
 }

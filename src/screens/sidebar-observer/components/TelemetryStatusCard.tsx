@@ -15,7 +15,31 @@ export const TelemetryStatusCard: FunctionalComponent<TelemetryStatusCardProps> 
   totalProcessed = 0,
   totalIgnoredNonWhitelist = 0,
   isObserving = false,
+  isAttached = false,
+  queueStatus = 'IDLE',
 }) => {
+  const getQueueBadge = () => {
+    switch (queueStatus) {
+      case 'PROCESSING':
+        return {
+          text: 'Đang xử lý (PROCESSING)',
+          className: 'bg-amber-400/10 text-amber-400 border-amber-400/30 animate-pulse',
+        };
+      case 'DRAINED':
+        return {
+          text: 'Đã hoàn tất (DRAINED)',
+          className: 'bg-emerald-400/10 text-emerald-400 border-emerald-400/30',
+        };
+      default:
+        return {
+          text: 'Trực chờ (IDLE)',
+          className: 'bg-slate-400/10 text-slate-400 border-slate-400/20',
+        };
+    }
+  };
+
+  const queueBadgeInfo = getQueueBadge();
+
   return (
     <div
       data-testid="telemetry-status-card"
@@ -57,20 +81,42 @@ export const TelemetryStatusCard: FunctionalComponent<TelemetryStatusCardProps> 
         </div>
       </div>
 
-      {/* Cột 4: Trạng thái Observer */}
+      {/* Cột 4: Trạng thái Observer & Hàng đợi */}
       <div className="flex flex-col">
-        <span className="text-xs font-medium text-slate-400">Trạng thái</span>
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-medium text-slate-400">Trạng thái</span>
+          <span
+            data-testid="stat-queue-status"
+            className={`text-[10px] px-1.5 py-0.5 rounded border font-medium ${queueBadgeInfo.className}`}
+          >
+            {queueBadgeInfo.text}
+          </span>
+        </div>
         <div className="flex items-center gap-2 mt-1.5">
           <span
             className={`w-2 h-2 rounded-full ${
-              isObserving ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'
+              isObserving
+                ? isAttached
+                  ? 'bg-emerald-400 animate-pulse'
+                  : 'bg-amber-400 animate-ping'
+                : 'bg-slate-500'
             }`}
           />
           <span
             data-testid="stat-observer-status"
-            className={`text-xs font-medium ${isObserving ? 'text-emerald-400' : 'text-slate-400'}`}
+            className={`text-xs font-medium ${isObserving ? (isAttached ? 'text-emerald-400' : 'text-amber-400') : 'text-slate-400'}`}
           >
-            {isObserving ? 'Đang quan sát' : 'Trực chờ'}
+            {isObserving ? (isAttached ? 'Đang quan sát' : 'Đang kết nối lại...') : 'Trực chờ'}
+          </span>
+          <span
+            data-testid="stat-attached-status"
+            className={`text-[10px] px-1.5 py-0.5 rounded border ${
+              isAttached
+                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
+            }`}
+          >
+            {isAttached ? 'Gắn kết' : 'Mất kết nối'}
           </span>
           {totalIgnoredNonWhitelist > 0 && (
             <span

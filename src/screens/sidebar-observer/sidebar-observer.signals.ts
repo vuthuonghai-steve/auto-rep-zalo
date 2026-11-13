@@ -30,7 +30,39 @@ const telemetryStats = signal<SidebarObserverTelemetryStats>({
   totalIgnoredNonWhitelist: 0,
   totalProcessed: 0,
   isObserving: false,
+  isAttached: false,
+  queueStatus: 'IDLE',
+  lastActiveTimestamp: Date.now(),
 });
+
+let activeTelemetryChannel: BroadcastChannel | null = null;
+
+export function initTelemetryListener(
+  channelName = 'n01_telemetry_channel',
+): BroadcastChannel | null {
+  if (activeTelemetryChannel) return activeTelemetryChannel;
+  try {
+    if (typeof BroadcastChannel !== 'undefined') {
+      activeTelemetryChannel = new BroadcastChannel(channelName);
+      activeTelemetryChannel.onmessage = (event: MessageEvent) => {
+        if (event.data && typeof event.data === 'object') {
+          sidebarObserverSignals.updateTelemetry(event.data);
+        }
+      };
+      return activeTelemetryChannel;
+    }
+  } catch {
+    // Fallback if BroadcastChannel is not supported
+  }
+  return null;
+}
+
+export function disposeTelemetryListener(): void {
+  if (activeTelemetryChannel) {
+    activeTelemetryChannel.close();
+    activeTelemetryChannel = null;
+  }
+}
 
 // Computed Signals
 const filteredGroups = computed(() => {
@@ -249,6 +281,11 @@ export const sidebarObserverSignals = {
       totalIgnoredNonWhitelist: 0,
       totalProcessed: 0,
       isObserving: false,
+      isAttached: false,
+      queueStatus: 'IDLE',
+      lastActiveTimestamp: Date.now(),
     };
   },
+  initTelemetryListener,
+  disposeTelemetryListener,
 };
