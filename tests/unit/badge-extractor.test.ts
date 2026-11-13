@@ -1,10 +1,10 @@
-import { GlobalWindow } from 'happy-dom';
-import { beforeEach, describe, expect, it } from 'vitest';
 import {
+  ZERO_UNREAD_RESULT,
   extractUnreadBadge,
   extractUnreadBadgeCount,
-  ZERO_UNREAD_RESULT,
 } from '@/utils/badge-extractor';
+import { GlobalWindow } from 'happy-dom';
+import { beforeEach, describe, expect, it } from 'vitest';
 
 // Khởi tạo Happy-DOM globals khi chạy với Bun Test hoặc môi trường không có DOM
 if (typeof document === 'undefined') {
@@ -48,7 +48,8 @@ describe('Badge Extractor Utility (Unit Tests - T005)', () => {
     it('should return zero unread for non-badge element containing text with numbers', () => {
       const el = document.createElement('div');
       el.className = 'conv-item';
-      el.innerHTML = '<span class="conv-name">Nhóm Bất Động Sản 2026</span><span class="time">14:30</span>';
+      el.innerHTML =
+        '<span class="conv-name">Nhóm Bất Động Sản 2026</span><span class="time">14:30</span>';
       const res = extractUnreadBadge(el);
       expect(res).toEqual(ZERO_UNREAD_RESULT);
       expect(extractUnreadBadgeCount(el)).toBe(0);
@@ -243,9 +244,9 @@ describe('Badge Extractor Utility (Unit Tests - T005)', () => {
       console.log('=== [T005 BADGE EXTRACTOR SNAPSHOT OUTPUT] ===');
       console.log(JSON.stringify(snapshotResults, null, 2));
 
-      expect(snapshotResults[0].extractionResult.unreadCount).toBe(5);
-      expect(snapshotResults[1].extractionResult.isDot).toBe(true);
-      expect(snapshotResults[2].extractionResult.unreadCount).toBe(42);
+      expect(snapshotResults[0]?.extractionResult.unreadCount).toBe(5);
+      expect(snapshotResults[1]?.extractionResult.isDot).toBe(true);
+      expect(snapshotResults[2]?.extractionResult.unreadCount).toBe(42);
     });
   });
 });
