@@ -54,14 +54,19 @@ export class QueueManager {
   /**
    * Đưa nhóm nguồn vào hàng chờ FIFO.
    */
-  async enqueue(groupId: string): Promise<boolean> {
+  async enqueue(groupId: string, correlationId?: string): Promise<boolean> {
     const id = await this.repo.enqueue(groupId);
     await this.notifyListeners();
 
     if (id !== null) {
-      logger.info('QUEUE_DISPATCH', 'N02', `Đã thêm nhóm vào hàng chờ FIFO: ${groupId}`, {
-        groupId,
-      });
+      logger.info(
+        'QUEUE_DISPATCH',
+        'N02',
+        `Đã thêm nhóm vào hàng chờ FIFO: ${groupId}${correlationId ? ` (Corr: ${correlationId})` : ''}`,
+        {
+          groupId,
+        },
+      );
       this.triggerNext().catch(() => {});
       return true;
     }

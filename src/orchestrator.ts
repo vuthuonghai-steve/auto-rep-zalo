@@ -1,5 +1,10 @@
 import { isFeatureEnabled } from '@/configs/storage.config';
-import type { EntityBundle, PriceRouteRule } from '@/contracts/schemas';
+import type {
+  EntityBundle,
+  GroupDetectedEvent,
+  PriceRouteRule,
+  WhitelistGroupItem,
+} from '@/contracts/schemas';
 import { db } from '@/db/database';
 import { SidebarObserver } from '@/nodes/n01-sidebar-observer';
 import { queueManager } from '@/nodes/n02-queue-manager';
@@ -49,17 +54,38 @@ export class ZaloAutomationOrchestrator {
       await this.processGroup(groupId, correlationId);
     });
 
-    // 3. Đọc cấu hình whitelist_groups từ IndexedDB app_settings
-    const settingRecord = await db.app_settings.get('config');
-    const configValue = settingRecord?.value as { whitelist_groups?: string[] } | undefined;
-    const whitelist = configValue?.whitelist_groups || [];
+    // 3. Đọc cấu hình whitelist: Ưu tiên đọc từ key 'n01_whitelist_groups' trong Dexie app_settings, nếu không có thì fallback sang record 'config' cũ
+    let whitelist: (string | WhitelistGroupItem)[] = [];
+    const n01Setting = await db.app_settings.get('n01_whitelist_groups');
+    if (n01Setting?.value) {
+      const val = n01Setting.value as { groups?: WhitelistGroupItem[] } | WhitelistGroupItem[];
+      if (Array.isArray((val as { groups?: WhitelistGroupItem[] }).groups)) {
+        whitelist = (val as { groups: WhitelistGroupItem[] }).groups;
+      } else if (Array.isArray(val)) {
+        whitelist = val;
+      }
+    }
+
+    if (whitelist.length === 0) {
+      const settingRecord = await db.app_settings.get('config');
+      const configValue = settingRecord?.value as { whitelist_groups?: string[] } | undefined;
+      whitelist = configValue?.whitelist_groups || [];
+    }
 
     // 4. Khởi chạy Sidebar Observer (N01) để theo dõi tin nhắn mới
     if (isFeatureEnabled('n01-sidebar-observer')) {
       this.observer = new SidebarObserver({
         whitelist,
-        onNewMessage: (groupId: string) => {
-          queueManager.enqueue(groupId).catch(() => {});
+        onNewMessage: (groupId: string, event?: GroupDetectedEvent) => {
+          logger.info(
+            'ORCHESTRATOR',
+            'N01',
+            `Phát hiện tin mới tại nhóm: ${groupId} (Tên: ${event?.groupName ?? 'N/A'}, Unread: ${event?.unreadCount ?? 0}, Corr: ${event?.correlationId ?? 'N/A'})`,
+            {
+              groupId,
+            },
+          );
+          queueManager.enqueue(groupId, event?.correlationId).catch(() => {});
         },
       });
       this.observer.start();
