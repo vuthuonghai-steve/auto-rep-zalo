@@ -1,20 +1,104 @@
-# TỔNG MỤC ĐẶC TẢ KIẾN TRÚC NODE & HƯỚNG DẪN TRIỂN KHAI HỆ THỐNG
-**Dự án**: Hệ thống Tự Động Hóa Thu Thập, Biên Tập & Phân Phối Tin Nhắn Zalo Đa Nhóm (Personal Account 24/7)  
-**Nền tảng**: Zalo Web (`chat.zalo.me`) — Chromium Extension Manifest V3 + TypeScript + IndexedDB (Dexie.js)  
-**Thư mục lưu trữ tài liệu**: `c:\Users\ADMIN\Documents\workspace\Sales\EXTENSIONS\Docs\Start-node\`  
-**Phiên bản đặc tả**: 2.1 (Official Modular Node Architecture Baseline)  
-**Ngày cập nhật**: 11/11/2026  
+# TỔNG MỤC ĐẶC TẢ KIẾN TRÚC & HƯỚNG DẪN ĐIỀU PHỐI HỆ THỐNG 10-NODE
+## Root Architectural Navigation Map & AI-First Cognitive Steering Guide
+
+```yaml
+metadata:
+  system_name: "Zalo Multi-Group Automated Message Aggregator & Cross-Dispatch Engine"
+  platform: "Zalo Web (https://chat.zalo.me/*) — Chromium Extension Manifest V3"
+  stack: "TypeScript + Dexie.js (IndexedDB) + Zod Schemas + MutationObserver + React 18 Widget"
+  architecture: "5-Layer Decoupled Flow Architecture (10 Autonomous Operational Nodes)"
+  specification_standard: "AI-First Cognitive Steering & Software Design Document (SDD) Baseline"
+  version: "2.1 (Production-Verified Unified Baseline)"
+  last_updated: "2026-11-12"
+  status: "Active Production Architecture"
+```
+
+### Bản Đồ Điều Hướng Tài Liệu & Hợp Đồng Hệ Thống
+
+- **Tài liệu Điều hướng 10 Node Chuyên trách**:
+  - [Node 01: Sidebar Observer & Whitelist Stream Ingestion](01_sidebar_observer_node.md)
+  - [Node 02: Group Queue & Single-Worker Concurrency Manager](02_group_queue_manager_node.md)
+  - [Node 03: Chat Switcher & Viewport Guard](03_chat_switcher_viewport_guard_node.md)
+  - [Node 04: Checkpoint Resolver & Delta Stitcher](04_checkpoint_delta_stitcher_node.md)
+  - [Node 05: Bundle Aggregator & Debounce Buffer](05_bundle_aggregator_node.md)
+  - [Node 06: Validation & Two-Tier Deduplication Gate](06_validation_deduplication_gate_node.md)
+  - [Node 07: Text Transformer & Target Price Router](07_text_transformer_target_router_node.md)
+  - [Node 08: Native Forward Modal Automator](08_native_forward_modal_automator_node.md)
+  - [Node 09: Sub-group Text Injector & Pacing Guard](09_subgroup_text_injector_pacing_guard_node.md)
+  - [Node 10: Checkpoint Committer & Queue Releaser](10_checkpoint_committer_queue_releaser_node.md)
+- **Mã nguồn Lõi Thực thi Hệ thống**:
+  - [Bộ Điều Phối Trung Tâm: orchestrator.ts](../../src/orchestrator.ts)
+  - [Khế Ước Schemas Hệ Thống: schemas.ts](../../src/contracts/schemas.ts)
+  - [Bộ Chọn DOM Chuẩn Hóa 3 Tầng: selectors.ts](../../src/contracts/selectors.ts)
+  - [Cơ Sở Dữ Liệu IndexedDB Dexie: database.ts](../../src/db/database.ts)
+- **Tài liệu Kiến trúc Nền tảng**:
+  - [Sơ Đồ Luồng Nghiệp Vụ Toàn Cục: business_flow.md](../Init/Diagrams/business_flow.md)
+  - [Tài Liệu Thiết Kế Kỹ Thuật Extension: tai_lieu_thiet_ke_so_bo_zalo_automation.md](../Init/tai_lieu_thiet_ke_so_bo_zalo_automation.md)
+  - [Đặc Tả Hợp Đồng Toàn Hệ Thống: he_thong_tu_dong_hoa_zalo_extension_spec.md](../Init/he_thong_tu_dong_hoa_zalo_extension_spec.md)
 
 ---
 
-## 1. TỔNG QUAN KIẾN TRÚC PHÂN TẦNG (5-LAYER ARCHITECTURE)
+## 1. Mệnh Lệnh Thực Thi Nhận Thức (Executive Directives)
 
-Hệ thống được bóc tách triệt để thành **5 tầng chức năng độc lập** với **10 Node chuyên trách**. Mỗi tầng chỉ giao tiếp với tầng kế tiếp thông qua các hợp đồng dữ liệu chuẩn hóa (Data Contracts), loại bỏ hoàn toàn sự phụ thuộc chéo và đảm bảo khả năng tự phục hồi 24/7:
+<instructions>
+Bạn là Defensive Systems Architect & Master Orchestrator chịu trách nhiệm toàn diện về tính toàn vẹn, bảo mật và sự ổn định vận hành 24/7 của Hệ thống Tự Động Hóa Zalo Extension 10-Node.
+
+Nhiệm vụ cốt lõi của tài liệu này: Đóng vai trò là Root Architectural Index & Cognitive Steering Guide, dẫn đường chuẩn xác cho AI Agent và Kỹ sư hệ thống tiếp cận kiến trúc phân tầng mà không gây quá tải bộ nhớ đệm chú ý.
+
+Kỷ luật vận hành bắt buộc:
+1. On-Demand Knowledge Loading: Tuyệt đối KHÔNG nạp đồng thời toàn bộ 10 tài liệu đặc tả Node vào ngữ cảnh làm việc nhằm chống hiện tượng loãng ngữ cảnh (Context Dilution) và suy giảm chú ý vùng giữa (Lost in the Middle). AI Agent chỉ được đọc sâu vào từng Node cụ thể thông qua liên kết điều hướng tương đối khi nhiệm vụ yêu cầu can thiệp vào Node đó.
+2. Zero-Assumption Discipline: Tuyệt đối không phỏng đoán trong các khoảng trống ngữ nghĩa (Zero Semantic Void). Mọi hành vi bóc tách DOM, gom cụm, khử trùng lặp và điều phối gửi tin phải căn cứ 100% trên Zod Schemas (`schemas.ts`), Dexie Stores (`database.ts`) và Selectors chuẩn hóa (`selectors.ts`).
+3. Mechanical Verification: Chỉ thừa nhận trạng thái hoàn thành khi vượt qua toàn bộ 7 cổng kiểm định nhị phân hệ thống (GATE-SYS-01 đến GATE-SYS-07) với bằng chứng thực thi cơ học không lỗi.
+</instructions>
+
+---
+
+## 2. Khung Ràng Buộc Hành Vi & Bất Biến Kiến Trúc (Behavioral Constraints)
+
+```yaml
+execution_policy:
+  priority_order:
+    1: "system_safety_and_anti_ban"
+    2: "source_contract_and_schema_stability"
+    3: "single_worker_mutex_invariance"
+    4: "deduplication_integrity_30_days"
+    5: "execution_throughput_and_pacing"
+
+  constraints:
+    must:
+      - "Validate 100% data structures against Zod Schemas and Dexie.js contracts before mutation."
+      - "Enforce strict single-threaded FIFO Mutex Lock for all DOM UI operations via Node 02."
+      - "Run two-tier deduplication check (entityKey + SHA-256 hash) within a rolling 30-day window."
+      - "Cap message forwarding to a maximum of 2 sub-groups per approved bundle."
+      - "Maintain micro-jitter delays (1000ms - 2000ms) and active Circuit Breaker safety guards."
+      - "Log every system event, warning, and failure into IndexedDB system_logs table."
+
+    must_not:
+      - "Use unauthorized or reverse-engineered socket APIs (zca-js, zlapi); consequence: instant permanent account termination."
+      - "Download and re-upload media binaries; consequence: quality loss, network congestion, and forward failure."
+      - "Click the '99+' unread badge button; consequence: virtualized DOM thrashing, memory exhaustion, and message loopback."
+      - "Execute concurrent UI actions across multiple tabs or chats; consequence: race conditions and state corruption."
+      - "Swallow runtime exceptions or fail without persisting structured error logs; consequence: deadlocked worker queue."
+
+  system_invariants:
+    single_ui_worker_mutex: "Chỉ duy nhất một tác vụ duyệt DOM / thao tác UI được hoạt động tại một thời điểm."
+    strict_bottom_viewport_anchor: "Luôn neo cố định tại đáy khung chat hiện tại, không cuộn ngược tải tin cũ."
+    immutable_checkpoint_commit: "Chỉ commit checkpoint vào DB khi toàn bộ chu trình xử lý nhóm nguồn hoàn tất."
+    two_phase_dispatch_integrity: "Tách biệt rõ ràng Pha 1 (chia sẻ media gốc) và Pha 2 (tiêm văn bản biên tập)."
+```
+
+---
+
+## 3. Kiến Trúc Hệ Thống & Miền Tri Thức (Domain Body)
+
+### 3.1. Mô Hình Phân Tầng Kiến Trúc 5 Tầng (5-Layer Modular Architecture)
+
+Hệ thống được bóc tách triệt để thành **5 tầng chức năng độc lập** với **10 Node chuyên trách**. Mỗi tầng chỉ giao tiếp với tầng kế tiếp thông qua các hợp đồng dữ liệu chuẩn hóa (Data Contracts), triệt tiêu hoàn toàn sự phụ thuộc chéo và đảm bảo khả năng tự phục hồi bền bỉ 24/7:
 
 ```mermaid
 flowchart TD
     subgraph Layer1["TẦNG 1: GIÁM SÁT SỰ KIỆN NỀN (EVENT MONITORING LAYER)"]
-        N01["Node 01: Sidebar Observer & Whitelist Filter\n(01_sidebar_observer_node.md)"]
+        N01["Node 01: Sidebar Observer & Whitelist Stream Ingestion\n(01_sidebar_observer_node.md)"]
     end
 
     subgraph Layer2["TẦNG 2: ĐIỀU PHỐI HÀNG CHỜ TRẠNG THÁI (QUEUE ORCHESTRATION LAYER)"]
@@ -38,41 +122,24 @@ flowchart TD
         N10["Node 10: Checkpoint Committer & Queue Releaser\n(10_checkpoint_committer_queue_releaser_node.md)"]
     end
 
-    %% Liên kết luồng dữ liệu
-    N01 -->|GroupDetectedEvent| N02
-    N02 -->|SelectedGroupPayload| N03
+    %% Luồng truyền dữ liệu giữa các Node
+    N01 -->|GroupId| N02
+    N02 -->|groupId + correlationId| N03
     N03 -->|ChatReadySignal| N04
-    N04 -->|DeltaStitchResult| N05
-    N05 -->|EntityBundle| N06
+    N04 -->|MessageItem[]| N05
+    N05 -->|EntityBundle[]| N06
     N06 -->|ApprovedBundle| N07
-    N07 -->|ReadyToForwardJob| N08
-    N08 -->|MediaForwardSuccessResult| N09
-    N09 -->|SubgroupDispatchCompletion| N10
-    N10 -->|QueueReleaseSignal| N02
+    N07 -->|RouteResult + Bundle| N08
+    N08 -->|MediaForwardSuccess| N09
+    N09 -->|TextInjectedSignal| N10
+    N10 -->|QueueReleaseSignal / Loopback| N02
 ```
 
 ---
 
-## 2. BẢNG CHỈ MỤC CÁC TÀI LIỆU ĐẶC TẢ NODE (NODE SPECIFICATION INDEX)
+### 3.2. Sơ Đồ Tương Tác Tuần Tự Toàn Hệ Thống (End-to-End Sequence & Loopback)
 
-Toàn bộ 10 tài liệu đặc tả chi tiết đã được biên soạn độc lập và chuẩn hóa tại thư mục `Docs/Start-node/`:
-
-| STT | Mã Node | Tên Node Chức Năng | Tầng Kiến Trúc | Tệp Đặc Tả Kỹ Thuật | Nhiệm Vụ Nghiệp Vụ Cốt Lõi |
-| :---: | :--- | :--- | :--- | :--- | :--- |
-| **01** | `N01_SIDEBAR_OBSERVER` | **Sidebar Observer & Whitelist Filter** | Tầng 1: Event Monitoring | [`01_sidebar_observer_node.md`](file:///c:/Users/ADMIN/Documents/workspace/Sales/EXTENSIONS/Docs/Start-node/01_sidebar_observer_node.md) | Lắng nghe song song bất đồng bộ trên `#conversationList`, nhận diện badge đỏ/preview tin mới, lọc theo danh sách Whitelist động. |
-| **02** | `N02_QUEUE_MANAGER` | **Group Queue & Concurrency Manager** | Tầng 2: Queue Orchestration | [`02_group_queue_manager_node.md`](file:///c:/Users/ADMIN/Documents/workspace/Sales/EXTENSIONS/Docs/Start-node/02_group_queue_manager_node.md) | Quản lý hàng đợi FIFO trong IndexedDB, điều phối Mutex Lock đơn luồng Worker, phục hồi sau F5/Crash (Persistent Recovery). |
-| **03** | `N03_CHAT_SWITCHER` | **Chat Switcher & Viewport Guard** | Tầng 3: Navigation & Stitching | [`03_chat_switcher_viewport_guard_node.md`](file:///c:/Users/ADMIN/Documents/workspace/Sales/EXTENSIONS/Docs/Start-node/03_chat_switcher_viewport_guard_node.md) | Mở nhóm nguồn, kiểm tra header, **tuyệt đối bỏ qua nút 99+**, neo chắc vị trí đáy màn hình (Strict Bottom Anchor). |
-| **04** | `N04_DELTA_STITCHER` | **Checkpoint Resolver & Delta Stitcher** | Tầng 3: Navigation & Stitching | [`04_checkpoint_delta_stitcher_node.md`](file:///c:/Users/ADMIN/Documents/workspace/Sales/EXTENSIONS/Docs/Start-node/04_checkpoint_delta_stitcher_node.md) | Quét DOM từ đáy lên tìm Điểm Nối Checkpoint, cắt lát tập Delta; kích hoạt Fallback 5–10 tin đáy an toàn khi trôi điểm nối. |
-| **05** | `N05_BUNDLE_AGGREGATOR` | **Bundle Aggregator & Debounce Buffer** | Tầng 4: Aggregation & Processing | [`05_bundle_aggregator_node.md`](file:///c:/Users/ADMIN/Documents/workspace/Sales/EXTENSIONS/Docs/Start-node/05_bundle_aggregator_node.md) | Gom cụm Media (Ảnh/Album/Video) + Text trong cửa sổ 15s theo người gửi; đệm micro-debounce 2-3s; thẩm định cấu trúc tối thiểu. |
-| **06** | `N06_DEDUPLICATION_GATE` | **Validation & Two-Tier Deduplication Gate** | Tầng 4: Aggregation & Processing | [`06_validation_deduplication_gate_node.md`](file:///c:/Users/ADMIN/Documents/workspace/Sales/EXTENSIONS/Docs/Start-node/06_validation_deduplication_gate_node.md) | Khử trùng lặp 2 lớp trong cửa sổ trượt 30 ngày (Rolling 30-Day Window) theo `entityKey` (SĐT/mã căn) và `contentHash` (SHA-256). |
-| **07** | `N07_ROUTER_TRANSFORMER` | **Text Transformer & Target Router** | Tầng 4: Aggregation & Processing | [`07_text_transformer_target_router_node.md`](file:///c:/Users/ADMIN/Documents/workspace/Sales/EXTENSIONS/Docs/Start-node/07_text_transformer_target_router_node.md) | Bóc tách giá tiếng Việt (Regex), ánh xạ tối đa 2 Nhóm Con theo khoảng giá, biên tập nội dung theo template, xử lý ngoại lệ chống treo. |
-| **08** | `N08_FORWARD_AUTOMATOR` | **Native Forward Modal Automator (Pha 1)** | Tầng 5: UI Dispatch & Safety | [`08_native_forward_modal_automator_node.md`](file:///c:/Users/ADMIN/Documents/workspace/Sales/EXTENSIONS/Docs/Start-node/08_native_forward_modal_automator_node.md) | Mở modal chia sẻ native Zalo, tìm và tích chọn tối đa 2 nhóm con, gửi media gốc, kiểm tra Toast "Đã chia sẻ tin nhắn" (Timeout 10s). |
-| **09** | `N09_TEXT_INJECTOR_SAFETY` | **Sub-group Text Injector & Pacing Guard (Pha 2 & 3)** | Tầng 5: UI Dispatch & Safety | [`09_subgroup_text_injector_pacing_guard_node.md`](file:///c:/Users/ADMIN/Documents/workspace/Sales/EXTENSIONS/Docs/Start-node/09_subgroup_text_injector_pacing_guard_node.md) | Chuyển sang từng nhóm con điền text vào `#chat-input`, micro-jitter 1000-2000ms, tự quay lại nhóm nguồn, giám sát Circuit Breaker. |
-| **10** | `N10_COMMITTER_RELEASER` | **Checkpoint Committer & Queue Releaser** | Tầng 5: UI Dispatch & Safety | [`10_checkpoint_committer_queue_releaser_node.md`](file:///c:/Users/ADMIN/Documents/workspace/Sales/EXTENSIONS/Docs/Start-node/10_checkpoint_committer_queue_releaser_node.md) | Quản lý đệm tĩnh lặng 10s Inactivity Drain (Safety Cap 5 cycles), cam kết Checkpoint mới vào DB, mở khóa Mutex Lock cho Node 2. |
-
----
-
-## 3. SƠ ĐỒ TƯƠNG TÁC TUẦN TỰ TOÀN HỆ THỐNG (END-TO-END SEQUENCE DIAGRAM)
+Biểu đồ tuần tự mô tả chi tiết dòng chuyển động dữ liệu từ khi phát hiện huy hiệu tin mới tại thanh Sidebar cho đến khi phân phối hoàn tất và giải phóng khóa điều phối:
 
 ```mermaid
 sequenceDiagram
@@ -85,134 +152,226 @@ sequenceDiagram
     participant N6 as N06: Dedup Gate (30d)
     participant N7 as N07: Router & Transformer
     participant N8 as N08: Forward Modal (P1)
-    participant N9 as N09: Text Injector (P2-3)
-    participant N10 as N10: Inactivity Committer
+    participant N9 as N09: Text Injector (P2)
+    participant N10 as N10: Committer & Drain
 
     Note over N1,N2: 1. GIÁM SÁT BẤT ĐỒNG BỘ 24/7
     N1->>N2: Phát hiện badge tin mới Nhóm X -> Enqueue (Status: PENDING)
-    Note over N2: Worker rảnh (isWorkerBusy = false) -> Lock Worker -> Status: PROCESSING
-    N2->>N3: Lệnh mở Nhóm X (SelectedGroupPayload)
-    
-    Note over N3,N4: 2. TRUY CẬP VÀ XÁC ĐỊNH ĐIỂM NỐI
-    N3->>N3: Click Sidebar -> Bỏ qua nút 99+ -> Neo chắc đáy màn hình
-    N3->>N4: Khung chat Nhóm X sẵn sàng (ChatReadySignal)
-    N4->>N4: Đọc Checkpoint cũ -> Quét DOM từ đáy -> Cắt mảng Delta
-    N4->>N5: Bàn giao DeltaMessages (DeltaStitchResult)
+    Note over N2: Worker rảnh (isWorkerBusy = false) -> Khóa Worker Mutex -> Status: PROCESSING
+    N2->>N3: Lệnh mở Nhóm X (processGroup với correlationId)
 
-    Note over N5,N7: 3. GOM CỤM, KHỬ TRÙNG & ĐIỀU HƯỚNG
-    N5->>N5: Gom Media + Text theo senderId trong 15s (Debounce 2-3s nếu cần)
-    loop Duyệt từng EntityBundle hợp lệ trong Nhóm X
+    Note over N3,N4: 2. CHUYỂN NHÓM & CẮT LÁT TIN NHẮN
+    N3->>N3: Click Sidebar -> Bỏ qua nút 99+ -> Neo chặt đáy màn hình
+    N3->>N4: Khung chat Nhóm X sẵn sàng
+    N4->>N4: Đọc Checkpoint cũ -> Quét DOM từ đáy lên -> Cắt mảng MessageItem[]
+    N4->>N5: Bàn giao danh sách MessageItem[] mới
+
+    Note over N5,N7: 3. GOM CỤM, KHỬ TRÙNG & PHÂN LOẠI GIÁ
+    N5->>N5: Gom Media + Text theo senderId (Cửa sổ 15s + Debounce 2-3s)
+    loop Duyệt từng EntityBundle trong Nhóm X
         N5->>N6: Chuyển giao EntityBundle
-        N6->>N6: Tra cứu Dexie.js (Rolling 30 ngày): Lớp 1 (SĐT) & Lớp 2 (SHA-256 Text)
-        alt Bị trùng lặp (Duplicate)
-            N6-->>N5: Ghi log SKIPPED_DUPLICATE -> Bỏ qua cụm
+        N6->>N6: Tra cứu Dexie.js (Rolling 30 ngày): Lớp 1 (entityKey) & Lớp 2 (contentHash)
+        alt Trùng lặp (Duplicate Detected)
+            N6-->>N5: Ghi log WARN / SKIPPED_DUPLICATE -> Bỏ qua cụm
         else Hợp lệ hoàn toàn (Clean New Entry)
-            N6->>N7: Bàn giao ApprovedBundle
-            N7->>N7: Regex bóc tách giá -> Ánh xạ tối đa 2 Nhóm Con -> Biên tập Text
-            alt Không có giá hoặc vượt quá 2 nhóm
-                N7-->>N5: Ghi log WARN -> Bỏ qua cụm (Không dừng hệ thống)
-            else Đủ điều kiện gửi
-                N7->>N8: Bàn giao ReadyToForwardJob
+            N6->>N7: Bàn giao Approved Bundle
+            N7->>N7: Regex bóc tách giá VNĐ -> Ánh xạ tối đa 2 Nhóm Con -> Biên tập Text
+            alt Không có nhóm đích phù hợp
+                N7-->>N5: Ghi log INFO -> Bỏ qua cụm (Không gián đoạn hệ thống)
+            else Đủ điều kiện phân phối
+                N7->>N8: Bàn giao ReadyToForwardJob (routeResult, bundle)
 
-                Note over N8,N9: 4. CHUYỂN TIẾP 2 PHA (TWO-PHASE DISPATCH)
-                N8->>N8: Pha 1: Forward cụm Media gốc qua Native Modal
-                N8->>N8: Chờ Toast 'Đã chia sẻ tin nhắn' xuất hiện (Timeout 10s)
-                N8->>N9: Media gửi thành công (MediaForwardSuccessResult)
-                
-                loop Cho từng Nhóm Con đích (Tối đa 2 nhóm)
-                    N9->>N9: Pha 2: Mở Nhóm Con -> Kiểm tra chat không bị khóa
-                    N9->>N9: Điền editedText vào #chat-input -> Phát Enter gửi
-                    N9->>N9: Micro-Jitter 1000ms - 2000ms
+                Note over N8,N9: 4. CHUYỂN TIẾP HAI PHA (TWO-PHASE DISPATCH)
+                opt Bundle có chứa Media (IMAGE / VIDEO / ALBUM)
+                    N8->>N8: Pha 1: Forward cụm Media gốc qua Native Modal Zalo
+                    N8->>N8: Chờ Toast 'Đã chia sẻ tin nhắn' xuất hiện (Timeout 10s)
                 end
-                
-                N9->>N9: Pha 3: Tự động click quay lại Nhóm Nguồn X
-                N9->>N9: Lưu bản ghi hoàn chỉnh vào bảng entities (IndexedDB)
+                N8->>N9: Hoàn tất chuyển tiếp Media
+
+                opt Bundle có chứa Text đã biên tập
+                    loop Từng Nhóm Con Đích (Tối đa 2 nhóm)
+                        N9->>N9: Pha 2: Mở Nhóm Con -> Kiểm tra chat không bị khóa
+                        N9->>N9: Điền editedText vào #chat-input -> Phát phím Enter
+                        N9->>N9: Kích hoạt Micro-Jitter (1000ms - 2000ms)
+                    end
+                    N9->>N9: Tự động click quay lại Nhóm Nguồn X
+                end
             end
         end
     end
 
-    Note over N9,N10: 5. CỬA SỔ TĨNH LẶNG 10S & LUÂN CHUYỂN
-    N9->>N10: Hoàn tất đợt cụm hiện tại -> Kích hoạt Drain Window 10s
-    alt Trong 10s có tin mới xuất hiện tại Nhóm X
-        N10->>N4: Reset bộ đếm -> Quét và xử lý tiếp đợt tin mới bổ sung
-    else Hết 10s không có tin mới
-        N10->>N10: Ghi Checkpoint mới vào bảng group_checkpoints
-        N10->>N2: Báo cáo QueueReleaseSignal: Nhóm X COMPLETED -> isWorkerBusy = false
-        Note over N2: Node 2 nhấc nhóm PENDING cũ nhất tiếp theo trong FIFO
-    end
+    Note over N9,N10: 5. ĐỆM TĨNH LẶNG 10S, CAM KẾT & LUÂN CHUYỂN
+    N9->>N10: Hoàn tất đợt phân phối -> Gọi commitAndDrain(groupId, bundle, quiescenceDelay)
+    N10->>N10: Ghi Checkpoint mới (lastMessageId, lastSenderId) vào group_checkpoints
+    N10->>N10: Cửa sổ đệm tĩnh lặng (Quiescence Delay 10s)
+    N10->>N2: Báo cáo hoàn tất -> Cập nhật queue status COMPLETED -> Mở khóa Worker Mutex
+    Note over N2: N02 tự động nhấc nhóm PENDING cũ nhất tiếp theo trong hàng đợi FIFO (Loopback)
 ```
 
 ---
 
-## 4. HỢP ĐỒNG CƠ SỞ DỮ LIỆU DÙNG CHUNG (INDEXEDDB SCHEMA — DEXIE.JS)
+### 3.3. Bản Đồ Điều Hướng Chi Tiết 10 Node Chuyên Trách (Node Navigation Map)
 
-Toàn bộ hệ thống giao tiếp bền vững thông qua cơ sở dữ liệu IndexedDB mang tên `ZaloAutomationDB` tại origin `https://chat.zalo.me`:
+Bảng điều hướng cung cấp bức tranh toàn cảnh về trách nhiệm nghiệp vụ và liên kết trực tiếp tới tài liệu đặc tả của từng Node:
+
+| STT | Mã Node | Tên Node Chức Năng | Tầng Kiến Trúc | Tệp Đặc Tả Kỹ Thuật | Nhiệm Vụ Nghiệp Vụ Cốt Lõi |
+| :---: | :--- | :--- | :--- | :--- | :--- |
+| **01** | `N01_SIDEBAR_OBSERVER` | **Sidebar Observer & Whitelist Stream Ingestion** | Tầng 1: Event Monitoring | [01_sidebar_observer_node.md](01_sidebar_observer_node.md) | Lắng nghe đột biến DOM trên `#conversationList`, phát hiện huy hiệu đỏ/preview tin mới, lọc danh sách Whitelist động từ `app_settings`. |
+| **02** | `N02_QUEUE_MANAGER` | **Group Queue & Single-Worker Concurrency Manager** | Tầng 2: Queue Orchestration | [02_group_queue_manager_node.md](02_group_queue_manager_node.md) | Quản lý hàng đợi FIFO trạng thái trong Dexie `group_dispatch_queue`, điều phối Worker Mutex đơn luồng, phục hồi tác vụ kẹt sau F5/Crash. |
+| **03** | `N03_CHAT_SWITCHER` | **Chat Switcher & Viewport Guard** | Tầng 3: Navigation & Stitching | [03_chat_switcher_viewport_guard_node.md](03_chat_switcher_viewport_guard_node.md) | Chuyển đổi khung chat sang nhóm nguồn an toàn, kiểm tra tiêu đề header, **tuyệt đối bỏ qua nút 99+**, neo chắc đáy màn hình hiện tại. |
+| **04** | `N04_DELTA_STITCHER` | **Checkpoint Resolver & Delta Stitcher** | Tầng 3: Navigation & Stitching | [04_checkpoint_delta_stitcher_node.md](04_checkpoint_delta_stitcher_node.md) | Đọc checkpoint từ Dexie, quét DOM từ đáy lên tìm điểm nối, cắt mảng `MessageItem[]` delta; kích hoạt cơ chế Fallback an toàn khi trôi điểm nối. |
+| **05** | `N05_BUNDLE_AGGREGATOR` | **Bundle Aggregator & Debounce Buffer** | Tầng 4: Aggregation & Processing | [05_bundle_aggregator_node.md](05_bundle_aggregator_node.md) | Gom cụm Media (Ảnh/Album/Video) + Text theo cùng `senderId` trong cửa sổ trượt 15s; áp dụng micro-debounce 2-3s; chuẩn hóa cấu trúc `EntityBundle`. |
+| **06** | `N06_DEDUPLICATION_GATE` | **Validation & Two-Tier Deduplication Gate** | Tầng 4: Aggregation & Processing | [06_validation_deduplication_gate_node.md](06_validation_deduplication_gate_node.md) | Khử trùng lặp 2 lớp trong cửa sổ trượt 30 ngày (Rolling 30-Day Window): Lớp 1 theo `entityKey` (SĐT/mã căn) và Lớp 2 theo `contentHash` (SHA-256). |
+| **07** | `N07_ROUTER_TRANSFORMER` | **Text Transformer & Target Router** | Tầng 4: Aggregation & Processing | [07_text_transformer_target_router_node.md](07_text_transformer_target_router_node.md) | Bóc tách giá số tiếng Việt (Regex đa dạng triệu/tỷ/k), ánh xạ tới tối đa 2 Nhóm Con theo `PriceRouteRule`, biên tập text theo mẫu, bảo vệ chống treo. |
+| **08** | `N08_FORWARD_AUTOMATOR` | **Native Forward Modal Automator (Pha 1)** | Tầng 5: UI Dispatch & Safety | [08_native_forward_modal_automator_node.md](08_native_forward_modal_automator_node.md) | Mở modal chia sẻ gốc của Zalo, tìm kiếm và tích chọn tối đa 2 nhóm con đích, gửi media gốc chất lượng HD, giám sát Toast thành công (Timeout 10s). |
+| **09** | `N09_TEXT_INJECTOR_SAFETY` | **Sub-group Text Injector & Pacing Guard (Pha 2)** | Tầng 5: UI Dispatch & Safety | [09_subgroup_text_injector_pacing_guard_node.md](09_subgroup_text_injector_pacing_guard_node.md) | Mở từng nhóm con đích, tiêm text đã biên tập vào `#chat-input`, kích hoạt Micro-Jitter (1000ms - 2000ms), tự quay lại nhóm nguồn, bảo vệ Circuit Breaker. |
+| **10** | `N10_COMMITTER_RELEASER` | **Checkpoint Committer & Queue Releaser** | Tầng 5: UI Dispatch & Safety | [10_checkpoint_committer_queue_releaser_node.md](10_checkpoint_committer_queue_releaser_node.md) | Quản lý đệm tĩnh lặng (Quiescence Drain 10s), cam kết bản ghi Checkpoint mới vào `group_checkpoints`, cập nhật trạng thái queue và nhả Mutex Lock cho N02. |
+
+---
+
+### 3.4. Hợp Đồng Dữ Liệu Lõi & Cấu Trúc Dexie Database (Data Contracts & Storage)
+
+Toàn bộ hệ thống giao tiếp bền vững thông qua cơ sở dữ liệu IndexedDB mang tên `ZaloAutomationDB` tại origin `https://chat.zalo.me`. Dữ liệu được đồng bộ 100% với các hợp đồng Zod Schemas tại `src/contracts/schemas.ts` và Dexie Database tại `src/db/database.ts`:
+
+#### Bảng Đối Soát Cấu Trúc Bảng IndexedDB & Schemas:
+
+| Tên Bảng (Dexie Table) | Primary Key / Index Keys | Zod Schema Đại Diện | Mô Tả Trách Nhiệm Dữ Liệu |
+| :--- | :--- | :--- | :--- |
+| `app_settings` | `key` | `AppSettingSchema` | Lưu trữ cấu hình toàn cục: `whitelist_groups`, `price_routes`, trạng thái tính năng. |
+| `group_checkpoints` | `groupId, updatedAt` | `GroupCheckpointSchema` | Lưu vết tin nhắn cuối (`lastMessageId`, `lastSenderId`) của từng nhóm nguồn để chống xử lý lặp. |
+| `group_dispatch_queue` | `++id, groupId, status, enqueuedAt` | `DispatchQueueItemSchema` | Hàng đợi FIFO các nhóm cần xử lý (`PENDING`, `PROCESSING`, `FAILED`, `COMPLETED`). |
+| `entities` | `++id, entityKey, contentHash, createdAt` | `MessageEntitySchema` | Bản ghi bài viết đã phân phối phục vụ bộ lọc khử trùng lặp 2 lớp trong cửa sổ 30 ngày. |
+| `system_logs` | `++id, correlationId, operation, level, nodeId, status, timestamp` | `SystemLogSchema` | Nhật ký vận hành tập trung ghi vết toàn bộ sự kiện, cảnh báo và lỗi chi tiết của 10 Node. |
+
+#### Khế Ước Mã Nguồn TypeScript & Zod Schemas:
 
 ```typescript
-import Dexie, { Table } from 'dexie';
+import { z } from 'zod';
+import Dexie, { type Table } from 'dexie';
 
-export interface AppSetting {
-  key: string;                 // Khóa cấu hình (whitelist_groups, price_mapping, etc.)
-  value: any;
-  updatedAt: number;
-}
+// 1. Cấu hình hệ thống (App Settings)
+export const AppSettingSchema = z.object({
+  key: z.string().min(1),
+  value: z.record(z.unknown()),
+  updatedAt: z.number().int().positive(),
+});
+export type AppSetting = z.infer<typeof AppSettingSchema>;
 
-export interface GroupCheckpoint {
-  groupId: string;             // ID nhóm nguồn
-  groupName: string;           // Tên nhóm nguồn
-  lastMsgId: string;           // ID của tin nhắn cuối cùng đã xử lý
-  lastMsgHash: string;         // SHA-256 chuỗi văn bản của tin nhắn cuối
-  lastMsgTimestamp: number;    // Thời gian của tin nhắn cuối
-  updatedAt: number;
-}
+// 2. Điểm nối tin nhắn (Group Checkpoint)
+export const GroupCheckpointSchema = z.object({
+  groupId: z.string().min(1),
+  lastMessageId: z.string(),
+  lastSenderId: z.string(),
+  updatedAt: z.number().int().positive(),
+});
+export type GroupCheckpoint = z.infer<typeof GroupCheckpointSchema>;
 
-export interface GroupDispatchItem {
-  groupId: string;             // ID nhóm nguồn
-  groupName: string;           // Tên nhóm nguồn
-  status: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
-  queuedAt: number;            // Thời điểm đưa vào hàng chờ
-  lastActiveAt: number;        // Thời điểm tin mới nhất phát sinh
-  retryCount: number;          // Đếm số lần thử lại sau crash
-  failReason?: string;
-}
+// 3. Trạng thái và Hàng đợi điều phối (Dispatch Queue)
+export const QueueStatusSchema = z.enum(['PENDING', 'PROCESSING', 'FAILED', 'COMPLETED']);
+export type QueueStatus = z.infer<typeof QueueStatusSchema>;
 
-export interface EntityRecord {
-  id?: number;
-  entityKey: string;           // SĐT hoặc SĐT_MãCăn (dùng cho deduplication Lớp 1)
-  contentHash: string;         // SHA-256 văn bản chuẩn hóa (dùng cho deduplication Lớp 2)
-  sourceGroupId: string;       // ID nhóm nguồn
-  sourceGroupName: string;
-  primaryPhone?: string;       // Số điện thoại trích xuất
-  priceNumber?: number;        // Giá số nguyên VNĐ
-  rawText: string;             // Text gốc
-  editedText: string;          // Text đã biên tập
-  targetGroupNames: string[];  // Danh sách các nhóm con đã nhận bài (tối đa 2)
-  createdAt: number;           // Mốc thời gian phục vụ lọc Rolling 30 ngày
-}
+export const DispatchQueueItemSchema = z.object({
+  id: z.number().int().positive().optional(),
+  groupId: z.string().min(1),
+  status: QueueStatusSchema,
+  retryCount: z.number().int().nonnegative().default(0),
+  enqueuedAt: z.number().int().positive(),
+});
+export type DispatchQueueItem = z.infer<typeof DispatchQueueItemSchema>;
 
-export interface SystemLog {
-  id?: number;
-  level: 'INFO' | 'WARN' | 'ERROR' | 'CRITICAL';
-  eventType: string;           // Mã sự kiện chuẩn hóa
-  details: string;
-  timestamp: number;
-}
+// 4. Thực thể tin nhắn đã xử lý khử trùng (Message Entity)
+export const MessageEntitySchema = z.object({
+  id: z.number().int().positive().optional(),
+  entityKey: z.string().min(1),
+  contentHash: z.string().min(1),
+  rawText: z.string(),
+  sourceGroupId: z.string().min(1),
+  targetGroupIds: z.array(z.string()),
+  createdAt: z.number().int().positive(),
+});
+export type MessageEntity = z.infer<typeof MessageEntitySchema>;
 
+// 5. Nhật ký hệ thống chuẩn hóa (System Log)
+export const SystemLogLevelSchema = z.enum(['INFO', 'WARN', 'ERROR', 'CRITICAL']);
+export type SystemLogLevel = z.infer<typeof SystemLogLevelSchema>;
+
+export const SystemLogStatusSchema = z.enum(['SUCCESS', 'FAILURE', 'DEGRADED']);
+export type SystemLogStatus = z.infer<typeof SystemLogStatusSchema>;
+
+export const SystemLogSchema = z.object({
+  id: z.number().int().positive().optional(),
+  correlationId: z.string().min(1),
+  operation: z.string().min(1),
+  nodeId: z.string().min(1),
+  level: SystemLogLevelSchema,
+  status: SystemLogStatusSchema,
+  durationMs: z.number().int().nonnegative(),
+  groupId: z.string(),
+  senderIdMasked: z.string(),
+  phoneMasked: z.string().optional(),
+  message: z.string(),
+  errorPayload: z
+    .object({
+      code: z.string(),
+      message: z.string(),
+      stack: z.string().optional(),
+    })
+    .optional(),
+  timestamp: z.number().int().positive(),
+});
+export type SystemLog = z.infer<typeof SystemLogSchema>;
+
+// 6. Cấu hình quy tắc định tuyến giá (Price Route Rule)
+export const PriceRouteRuleSchema = z.object({
+  id: z.string().min(1),
+  label: z.string().min(1),
+  minPrice: z.number().nonnegative(),
+  maxPrice: z.number().positive().nullable().optional(),
+  targetGroupIds: z.array(z.string().min(1)).max(2),
+});
+export type PriceRouteRule = z.infer<typeof PriceRouteRuleSchema>;
+
+// 7. Phần tử tin nhắn DOM (Message Item)
+export const MessageItemSchema = z.object({
+  msgId: z.string().min(1),
+  type: z.enum(['TEXT', 'IMAGE', 'VIDEO', 'ALBUM']),
+  text: z.string().optional(),
+  mediaUrls: z.array(z.string()).optional(),
+  timestamp: z.number().int().positive(),
+});
+export type MessageItem = z.infer<typeof MessageItemSchema>;
+
+// 8. Cụm bài đăng hợp nhất (Entity Bundle)
+export const EntityBundleSchema = z.object({
+  bundleId: z.string().min(1),
+  sourceGroupId: z.string().min(1),
+  senderId: z.string().min(1),
+  senderName: z.string().optional(),
+  messages: z.array(MessageItemSchema).min(1),
+  rawCombinedText: z.string(),
+  extractedPhone: z.string().optional(),
+  detectedPrice: z.number().optional(),
+  targetGroupIds: z.array(z.string()).max(2).default([]),
+  createdAt: z.number().int().positive(),
+});
+export type EntityBundle = z.infer<typeof EntityBundleSchema>;
+
+// 9. Dexie Database Definition
 export class ZaloAutomationDatabase extends Dexie {
   app_settings!: Table<AppSetting, string>;
   group_checkpoints!: Table<GroupCheckpoint, string>;
-  group_dispatch_queue!: Table<GroupDispatchItem, string>;
-  entities!: Table<EntityRecord, number>;
+  group_dispatch_queue!: Table<DispatchQueueItem, number>;
+  entities!: Table<MessageEntity, number>;
   system_logs!: Table<SystemLog, number>;
 
-  constructor() {
-    super('ZaloAutomationDB');
+  constructor(databaseName = 'ZaloAutomationDB') {
+    super(databaseName);
     this.version(1).stores({
-      app_settings: '&key, updatedAt',
-      group_checkpoints: '&groupId, updatedAt',
-      group_dispatch_queue: '&groupId, status, queuedAt',
-      entities: '++id, &entityKey, contentHash, sourceGroupId, createdAt',
-      system_logs: '++id, level, eventType, timestamp'
+      app_settings: 'key',
+      group_checkpoints: 'groupId, updatedAt',
+      group_dispatch_queue: '++id, groupId, status, enqueuedAt',
+      entities: '++id, entityKey, contentHash, createdAt',
+      system_logs: '++id, correlationId, operation, level, nodeId, status, timestamp',
     });
   }
 }
@@ -222,75 +381,158 @@ export const db = new ZaloAutomationDatabase();
 
 ---
 
-## 5. HẠ TẦNG KỸ THUẬT EXTENSION MANIFEST V3 & AN TOÀN 24/7
+### 3.5. Hạ Tầng Kỹ Thuật Manifest V3 & Cơ Chế Phòng Thủ Bất Biến
 
-### 5.1. Cơ chế Ngăn Ngừa Ngủ Đông (Keep-Awake Architecture)
-- **Background Service Worker (`background.ts`)**:
-  - `chrome.power.requestKeepAwake('display')`: Giữ CPU và hiển thị của trình duyệt luôn kích hoạt, ngăn hệ điều hành đưa máy vào trạng thái Sleep/Suspend.
-  - `Long-lived Runtime Port (Heartbeat 20s)`: Content Script gửi tín hiệu `ping` mỗi 20 giây sang Service Worker qua `chrome.runtime.connect({ name: 'keep-awake-port' })`. Service Worker phản hồi `pong` để reset bộ đếm idle 30s của Chrome MV3.
-  - `chrome.alarms (60s Watchdog)`: Định kỳ kiểm tra tab `https://chat.zalo.me/*`. Nếu tab bị đóng hoặc treo mất kết nối, Service Worker tự động kích hoạt tạo lại tab mới.
+```yaml
+safety_and_runtime_infrastructure:
+  manifest_v3_keep_awake:
+    mechanism_1_power_api: "chrome.power.requestKeepAwake('display') ngăn hệ điều hành đưa máy vào trạng thái Sleep/Suspend."
+    mechanism_2_runtime_port: "Content Script duy trì kết nối Long-lived Port gửi nhịp tim ping mỗi 20s để reset bộ đếm idle của Chrome Service Worker."
+    mechanism_3_alarms_watchdog: "chrome.alarms quét mỗi 60s; nếu phát hiện tab Zalo Web bị đóng hoặc treo, tự động kích hoạt tạo lại tab mới."
 
-### 5.2. Giao Diện Điều Khiển Nổi (Injected Floating Widget)
-- Chèn trực tiếp một mini dashboard nổi ở góc dưới bên phải màn hình Zalo Web:
-  - Hiển thị trạng thái hoạt động của Worker: `IDLE` (Xanh), `PROCESSING` (Vàng), `PAUSED_CIRCUIT_BREAKER` (Đỏ).
-  - Hiển thị tên nhóm đang xử lý và số lượng nhóm đang chờ trong hàng đợi (`Queue: X`).
-  - Nút bấm khẩn cấp **"DỪNG KHẨN CẤP (EMERGENCY STOP)"**: Cho phép người vận hành ngắt ngay lập tức mọi tiến trình tự động chỉ với 1 click chuột.
+  anti_ban_and_rate_limiting:
+    native_dom_simulation: "Mọi thao tác forward và gõ text đều thực hiện qua Native DOM và React internal props, tuyệt đối không dùng API ngầm."
+    randomized_micro_jitter: "Khoảng dừng ngẫu nhiên từ 1000ms đến 2000ms giữa mỗi thao tác gửi tin mô phỏng hành vi tự nhiên của con người."
+    circuit_breaker_guard: "Tự động ngắt tiến trình (PAUSE_CIRCUIT_BREAKER) khi phát hiện 3 lỗi gửi liên tiếp hoặc phát hiện cảnh báo spam từ Zalo UI."
 
----
-
-## 6. KHÔNG GIAN PHỦ ĐỊNH & CÁC ĐIỀU RĂN BẤT BIẾN (NEGATIVE SPACE & 6 COMMANDMENTS)
-
-Mọi kỹ sư triển khai và kiểm thử bắt buộc phải tuân thủ nghiêm ngặt 6 điều cấm sau:
-
-1. **CẤM SỬ DỤNG API NGẦM / REVERSE-ENGINEERED SOCKET (`zca-js`, `zlapi`)**: VNG kiểm soát chặt chẽ chữ ký mã hóa gói tin. Việc gọi API ngầm sẽ dẫn đến khóa tài khoản vĩnh viễn ngay lập tức. Toàn bộ thao tác 100% phải mô phỏng qua DOM thật trên trình duyệt.
-2. **CẤM TẢI VỀ (DOWNLOAD) & RE-UPLOAD MEDIA**: Làm giảm chất lượng HD, tốn băng thông và mất tính năng forward tức thì của Zalo. Bắt buộc dùng Native Forward Modal.
-3. **CẤM CLICK NÚT "99+" TIN CHƯA ĐỌC**: Việc nhảy ngược về lịch sử cũ làm tải hàng trăm DOM ảo hóa, gây lag trình duyệt và gửi trùng tin nhắn cũ. Luôn giữ vị trí cố định ở đáy màn hình hiện tại.
-4. **CẤM THỰC THI ĐỒNG THỜI NHIỀU THAO TÁC UI (NO CONCURRENT UI ACTIONS)**: Trình duyệt là đơn luồng UI. Mọi hành vi mở modal, chuyển nhóm, gõ text bắt buộc phải tuần tự hóa qua Mutex Lock (FIFO).
-5. **CẤM VƯỢT QUÁ NGƯỠNG AN TOÀN**: Không gửi quá 2 Nhóm Con cho 1 bài đăng, không bỏ qua khoảng trễ Micro-Jitter `1000ms – 2000ms`.
-6. **CẤM NUỐT NGOẠI LỆ (SILENT ERROR SWALLOWING)**: Mọi lỗi xuất hiện (không tìm thấy selector, timeout toast, modal kẹt) bắt buộc phải ghi log vào `system_logs` và kích hoạt kịch bản hủy an toàn, không để treo Worker.
-
----
-
-## 7. LỘ TRÌNH TRIỂN KHAI THEO GIAI ĐOẠN (IMPLEMENTATION SEQUENCING)
-
-Để việc phát triển đạt hiệu quả cao nhất và giảm thiểu rủi ro xung đột mã nguồn, dự án cần được triển khai tuần tự theo 4 giai đoạn:
-
-```mermaid
-flowchart LR
-    Phase1["Giai đoạn 1:\nCơ sở hạ tầng & Lưu trữ\n(Dexie DB, Manifest MV3, Utils)"] --> Phase2["Giai đoạn 2:\nLắng nghe & Gom cụm\n(Node 1, 2, 3, 4, 5)"]
-    Phase2 --> Phase3["Giai đoạn 3:\nKhử trùng & Điều hướng\n(Node 6, 7)"]
-    Phase3 --> Phase4["Giai đoạn 4:\nThực thi 2 Pha & Hoàn thiện\n(Node 8, 9, 10, Widget)"]
+  operator_ui_widget:
+    floating_dashboard: "Injected Floating Widget tại góc phải màn hình Zalo Web hiển thị trạng thái Worker, hàng đợi và nhóm đang xử lý."
+    emergency_stop: "Nút bấm dừng khẩn cấp cho phép kỹ sư vận hành ngắt ngay lập tức toàn bộ tiến trình điều phối chỉ với một thao tác click."
 ```
 
-### Giai đoạn 1: Cơ sở Hạ tầng & Mô hình Dữ liệu (Foundation & Storage)
-- **Mục tiêu**: Xây dựng nền tảng Manifest V3, cấu hình Dexie.js và các hàm tiện ích React 18.
-- **Tác vụ**:
-  - Khởi tạo `manifest.json` theo chuẩn Manifest V3.
-  - Hiện thực `ZaloAutomationDatabase` trong `db.ts` với 5 bảng.
-  - Hiện thực các hàm tiện ích lõi trong `dom-utils.ts`: `setReactInputValue`, `randomJitter`, `waitForToastSuccess`.
-  - Thiết lập Service Worker `background.ts` với nhịp tim Keep-Awake 20s và `chrome.power`.
+> [!NOTE]
+> Khung điều phối trung tâm `orchestrator.ts` hỗ trợ cờ bật/tắt độc lập cho từng Node thông qua `isFeatureEnabled()`. Khi một Node bị tắt tạm thời (ví dụ: bảo trì `n08-forward-automator`), hệ thống tự động kích hoạt cơ chế Dry-Run an toàn mà không làm gián đoạn toàn bộ luồng xử lý của các Node khác.
 
-### Giai đoạn 2: Giám Sát, Điều Phối & Bóc Tách (Event Monitoring & Delta Stitching)
-- **Mục tiêu**: Lắng nghe sự kiện tin mới và bóc tách thành công các đối tượng `EntityBundle`.
-- **Tác vụ**:
-  - Triển khai **Node 1** (`SidebarObserver`): MutationObserver trên `#conversationList` + Whitelist Filter.
-  - Triển khai **Node 2** (`QueueManager`): Quản lý hàng đợi FIFO + Mutex Lock + Persistent Recovery.
-  - Triển khai **Node 3** (`ChatSwitcher`): Chuyển nhóm, Strict Bottom Anchor, bỏ qua nút 99+.
-  - Triển khai **Node 4** (`DeltaStitcher`): Nối điểm Checkpoint, cắt mảng Delta, Fallback 5–10 tin đáy.
-  - Triển khai **Node 5** (`BundleAggregator`): Gom Media + Text theo `senderId` trong 15s + Debounce 2-3s.
+> [!IMPORTANT]
+> Toàn bộ thao tác phân phối tin nhắn bắt buộc phải tuân thủ nghiêm ngặt nguyên tắc **Hai Pha Độc Lập (Two-Phase Dispatch)**: Pha 1 sử dụng Native Forward Modal để chia sẻ cụm media gốc giữ nguyên chất lượng HD; Pha 2 mở từng nhóm con đích để tiêm văn bản đã biên tập kèm số điện thoại liên hệ mới.
 
-### Giai đoạn 3: Khử Trùng Lặp 2 Lớp & Phân Loại Giá (Intelligence & Routing Gate)
-- **Mục tiêu**: Đảm bảo không bao giờ gửi trùng bài và phân loại đúng dải giá của Nhóm Con.
-- **Tác vụ**:
-  - Triển khai **Node 6** (`DeduplicationGate`): Kiểm tra Lớp 1 (SĐT/mã đối tượng) & Lớp 2 (SHA-256) trong cửa sổ 30 ngày.
-  - Triển khai **Node 7** (`RouterTransformer`): Regex bóc tách giá tiền Việt Nam, ánh xạ tối đa 2 nhóm con, biên tập text theo template.
+> [!WARNING]
+> Cấm tuyệt đối việc giảm bớt hoặc bỏ qua khoảng trễ Micro-Jitter (1000ms - 2000ms) giữa các lần tiêm văn bản vào nhóm con đích. Việc spam tin nhắn liên tục với tốc độ máy móc sẽ kích hoạt hệ thống phát hiện hành vi bất thường của Zalo và dẫn đến khóa tính năng gửi tin nhắn.
 
-### Giai đoạn 4: Thực Thi Giao Diện 2 Pha, An Toàn & Giao Diện Người Dùng (UI Execution & Production Ready)
-- **Mục tiêu**: Tự động hóa gửi tin hoàn chỉnh, bảo vệ an toàn tài khoản và giao diện người vận hành.
-- **Tác vụ**:
-  - Triển khai **Node 8** (`NativeForwardAutomator`): Forward cụm media qua modal gốc, kiểm tra Toast thành công 10s.
-  - Triển khai **Node 9** (`TextInjector`): Chuyển từng nhóm con điền text vào `#chat-input`, quay lại nhóm nguồn, Circuit Breaker.
-  - Triển khai **Node 10** (`CommitterReleaser`): Cửa sổ đệm tĩnh lặng 10s Inactivity Drain (Safety Cap 5 cycles), cam kết Checkpoint, mở khóa hàng đợi.
-  - Triển khai Floating Widget hiển thị trạng thái và nút Emergency Stop.
-  - Thực hiện kiểm thử toàn diện vượt qua 7 cổng nghiệm thu nhị phân (`GATE-01` đến `GATE-07`).
+> [!CAUTION]
+> Tuyệt đối KHÔNG click vào nút hiển thị số lượng tin chưa đọc "99+" tại khung chat. Hành vi này sẽ khiến cây DOM ảo hóa của Zalo cuộn ngược về quá khứ tải hàng trăm tin nhắn cũ, làm tràn bộ nhớ trình duyệt và có nguy cơ tái kích hoạt gửi lặp các bài đăng đã xử lý từ nhiều ngày trước.
 
+---
+
+## 4. Ngữ Cảnh Nạp Động & Bản Đồ Điều Hướng Tác Vụ (Isolated Context)
+
+<context>
+```yaml
+load_when_needed:
+  sidebar_or_whitelist_issues:
+    target_node: "Node 01: Sidebar Observer & Whitelist Stream Ingestion"
+    spec_path: "01_sidebar_observer_node.md"
+    source_path: "../../src/nodes/n01-sidebar-observer.ts"
+    dom_snapshot: "../../Temps/zalo-element/sidebar.html"
+    when_to_load: "Khi có lỗi không nhận diện badge tin mới, cấu hình whitelist không lọc đúng nhóm hoặc DOM thanh sidebar thay đổi."
+
+  queue_locking_or_stale_tasks:
+    target_node: "Node 02: Group Queue & Single-Worker Concurrency Manager"
+    spec_path: "02_group_queue_manager_node.md"
+    source_path: "../../src/nodes/n02-queue-manager.ts"
+    database_contract: "../../src/db/database.ts"
+    when_to_load: "Khi hàng đợi bị kẹt trạng thái PROCESSING sau crash, Worker Mutex không nhả khóa hoặc cần kiểm tra thứ tự ưu tiên FIFO."
+
+  navigation_or_viewport_drifting:
+    target_node: "Node 03: Chat Switcher & Viewport Guard"
+    spec_path: "03_chat_switcher_viewport_guard_node.md"
+    source_path: "../../src/nodes/n03-chat-switcher.ts"
+    selectors: "../../src/contracts/selectors.ts"
+    when_to_load: "Khi không chuyển được tab chat, click nhầm nút 99+ hoặc vị trí cuộn màn hình bị trôi khỏi đáy."
+
+  checkpoint_or_delta_stitch_errors:
+    target_node: "Node 04: Checkpoint Resolver & Delta Stitcher"
+    spec_path: "04_checkpoint_delta_stitcher_node.md"
+    source_path: "../../src/nodes/n04-delta-stitcher.ts"
+    schemas: "../../src/contracts/schemas.ts"
+    when_to_load: "Khi tin nhắn bị sót, điểm checkpoint không khớp hoặc cần tinh chỉnh thuật toán Fallback quét tin đáy."
+
+  bundle_grouping_or_debounce_tuning:
+    target_node: "Node 05: Bundle Aggregator & Debounce Buffer"
+    spec_path: "05_bundle_aggregator_node.md"
+    source_path: "../../src/nodes/n05-bundle-aggregator.ts"
+    schemas: "../../src/contracts/schemas.ts"
+    when_to_load: "Khi ảnh và văn bản của cùng một người gửi bị tách rời thành 2 cụm riêng biệt hoặc cần điều chỉnh cửa sổ gom 15s."
+
+  duplicate_posts_or_dedup_failures:
+    target_node: "Node 06: Validation & Two-Tier Deduplication Gate"
+    spec_path: "06_validation_deduplication_gate_node.md"
+    source_path: "../../src/nodes/n06-dedup-gate.ts"
+    database_contract: "../../src/db/database.ts"
+    when_to_load: "Khi phát hiện bài đăng bị gửi trùng vào các nhóm con hoặc cần thẩm tra logic băm SHA-256 / trích xuất số điện thoại."
+
+  price_extraction_or_routing_errors:
+    target_node: "Node 07: Text Transformer & Target Router"
+    spec_path: "07_text_transformer_target_router_node.md"
+    source_path: "../../src/nodes/n07-price-router.ts"
+    schemas: "../../src/contracts/schemas.ts"
+    when_to_load: "Khi phát hiện giá nhà đất bị bóc tách sai định dạng (triệu/tỷ/cây), định tuyến vượt quá 2 nhóm con hoặc mẫu tin biên tập bị lỗi."
+
+  forward_modal_stuck_or_timeout:
+    target_node: "Node 08: Native Forward Modal Automator"
+    spec_path: "08_native_forward_modal_automator_node.md"
+    source_path: "../../src/nodes/n08-forward-automator.ts"
+    selectors: "../../src/contracts/selectors.ts"
+    when_to_load: "Khi modal chia sẻ không mở được, không tìm thấy ô tìm kiếm nhóm con hoặc timeout chờ Toast thông báo thành công."
+
+  text_injection_or_pacing_issues:
+    target_node: "Node 09: Sub-group Text Injector & Pacing Guard"
+    spec_path: "09_subgroup_text_injector_pacing_guard_node.md"
+    source_path: "../../src/nodes/n09-text-injector.ts"
+    pacing_guard: "../../src/utils/pacing-guard.ts"
+    when_to_load: "Khi text không tiêm được vào React input, phím Enter không phát sự kiện gửi hoặc Circuit Breaker bị kích hoạt ngắt tiến trình."
+
+  checkpoint_commit_or_quiescence_drain:
+    target_node: "Node 10: Checkpoint Committer & Queue Releaser"
+    spec_path: "10_checkpoint_committer_queue_releaser_node.md"
+    source_path: "../../src/nodes/n10-committer-drain.ts"
+    database_contract: "../../src/db/database.ts"
+    when_to_load: "Khi checkpoint không được lưu vào IndexedDB, cửa sổ đệm tĩnh lặng 10s hoạt động sai hoặc hàng đợi không chuyển sang nhóm tiếp theo."
+```
+</context>
+
+---
+
+## 5. Khế Ước Đầu Ra & Ma Trận Cổng Nghiệm Thu (Output Contract & Acceptance Gates)
+
+<output_contract>
+Mọi thay đổi kiến trúc hoặc mã nguồn trên hệ thống 10-Node bắt buộc phải vượt qua toàn bộ 7 cổng kiểm định nhị phân sau trước khi đưa vào sản xuất:
+
+### 5.1. Ma Trận 7 Cổng Kiểm Định Nhị Phân Toàn Hệ Thống (Global Verification Matrix)
+
+| Cổng Kiểm Định | Tên Cổng Nghiệm Thu | Tiêu Chuẩn Đạt Nhị Phân (Binary Pass Criteria) | Mã Lỗi Vi Phạm |
+| :---: | :--- | :--- | :--- |
+| **GATE-SYS-01** | Zero API Bypass & 100% DOM Simulation | 100% thao tác điều khiển được thực thi qua DOM ảo hóa hoặc giao diện thật; không có bất kỳ dòng mã nào gọi tới các endpoint API socket ngầm (`zca-js`, `zlapi`). | `ERR_UNAUTHORIZED_SOCKET_API` |
+| **GATE-SYS-02** | Strict Single-Worker Mutex Invariance | Tại bất kỳ thời điểm nào, chỉ có tối đa 1 nhóm nguồn ở trạng thái `PROCESSING` trong `group_dispatch_queue`. Tuyệt đối không xảy ra chạy đua thao tác UI giữa 2 nhóm. | `ERR_CONCURRENT_WORKER_VIOLATION` |
+| **GATE-SYS-03** | Two-Tier Deduplication Accuracy (30-Day Window) | Bộ lọc khử trùng lặp loại bỏ 100% các cụm bài trùng `entityKey` (SĐT) hoặc `contentHash` (SHA-256) đã tồn tại trong bảng `entities` trong vòng 30 ngày gần nhất. | `ERR_DUPLICATE_DISPATCH_LEAK` |
+| **GATE-SYS-04** | Strict Target Cap (<= 2 Subgroups) | Không có bất kỳ bài đăng nào được phân phối tới nhiều hơn 2 nhóm con đích (`targetGroupIds.length <= 2`). Mọi trường hợp vượt ngưỡng phải được cắt ngắn hoặc báo lỗi. | `ERR_TARGET_CAP_EXCEEDED` |
+| **GATE-SYS-05** | Two-Phase Dispatch Integrity | Pha 1 chia sẻ media gốc qua modal Zalo native hoàn tất và nhận Toast thành công trước khi Pha 2 tiêm văn bản biên tập vào các nhóm con. | `ERR_TWO_PHASE_ORDER_VIOLATION` |
+| **GATE-SYS-06** | Clean Inactivity Drain & Checkpoint Persistence | Cửa sổ đệm tĩnh lặng 10s hoạt động chính xác; checkpoint mới (`lastMessageId`, `lastSenderId`) được cam kết nguyên vẹn vào `group_checkpoints` trước khi mở khóa hàng đợi. | `ERR_CHECKPOINT_COMMIT_FAILURE` |
+| **GATE-SYS-07** | Anti-Ban Pacing & Circuit Breaker Protection | Toàn bộ các thao tác gửi tin đều có độ trễ ngẫu nhiên từ 1000ms đến 2000ms. Khi phát hiện 3 lỗi liên tiếp, Circuit Breaker lập tức chuyển trạng thái `PAUSED_CIRCUIT_BREAKER`. | `ERR_CIRCUIT_BREAKER_TRIPPED` |
+
+---
+
+### 5.2. Danh Mục Kiểm Tra Hoàn Thành (Definition of Done)
+
+```yaml
+definition_of_done:
+  structural_integrity:
+    - "Phân tách rõ ràng giữa Mệnh lệnh (<instructions>), Ràng buộc (Constraints), Thân bài (Domain Body), Ngữ cảnh (<context>) và Cổng nghiệm thu (<output_contract>)."
+    - "Khối ràng buộc khai báo rõ ràng Negative Space (tối thiểu 5 điều cấm must_not) kèm hậu quả sập."
+    - "Toàn bộ cấu trúc YAML tuân thủ nghiêm ngặt độ sâu thụt lề <= 3 cấp."
+
+  portability_and_linking:
+    - "Toàn bộ 100% liên kết điều hướng phải sử dụng đường dẫn tương đối và click được trực tiếp từ IDE hoặc UI."
+    - "Tuyệt đối không lồng ký tự backtick vào phần nhãn văn bản của liên kết Markdown."
+    - "Tuyệt đối không chứa bất kỳ tiền tố giao thức tệp cục bộ hay ký tự ổ đĩa tuyệt đối nào."
+
+  cognitive_clarity_and_density:
+    - "Tỷ lệ tín hiệu trên nhiễu cao: Không chứa câu từ xã giao, văn phong hoa mỹ hay các đoạn văn lặp ý."
+    - "Loại bỏ hoàn toàn khoảng trống ngữ nghĩa (Zero Semantic Void), không để lại giả định ngầm chưa kiểm chứng."
+    - "Không chứa bất kỳ ký tự placeholder chưa hoàn thiện (TODO, mock code, stub)."
+
+  mechanical_validity:
+    - "Cấu trúc Zod Schemas và Dexie Stores khớp 100% với mã nguồn src/contracts/schemas.ts và src/db/database.ts."
+    - "Toàn bộ các khối biểu đồ Mermaid, bảng Markdown và khối mã đều có cú pháp chuẩn xác, hiển thị hoàn hảo."
+```
+</output_contract>

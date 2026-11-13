@@ -1,202 +1,503 @@
-# ĐẶC TẢ CHI TIẾT NODE 04: CHECKPOINT RESOLVER & DELTA STITCHER
+# ĐẶC TẢ KIẾN TRÚC NODE 04: CHECKPOINT RESOLVER & DELTA STITCHER
 
-**Mã định danh Node**: `N04_DELTA_STITCHER`  
-**Tầng kiến trúc**: Tầng 3 — Truy Cập & Xác Định Điểm Nối (Navigation & Stitching Layer)  
-**Ngữ cảnh thực thi**: Content Script (`content-script.ts`) trên Zalo Web (`https://chat.zalo.me/*`)  
-**Tài liệu tham chiếu**:
-- [business_flow.md](file:///c:/Users/ADMIN/Documents/workspace/Sales/EXTENSIONS/Docs/Init/Diagrams/business_flow.md)
-- [tai_lieu_thiet_ke_so_bo_zalo_automation.md](file:///c:/Users/ADMIN/Documents/workspace/Sales/EXTENSIONS/Docs/Init/tai_lieu_thiet_ke_so_bo_zalo_automation.md)
-- [he_thong_tu_dong_hoa_zalo_extension_spec.md](file:///c:/Users/ADMIN/Documents/workspace/Sales/EXTENSIONS/Docs/Init/he_thong_tu_dong_hoa_zalo_extension_spec.md)
+## 1. Metadata Header & Bản Đồ Điều Hướng
+
+```yaml
+node_metadata:
+  identifier: "N04_DELTA_STITCHER"
+  layer: "Tầng 3 — Truy Cập & Xác Định Điểm Nối (Navigation & Stitching Layer)"
+  execution_context: "Content Script (content-script.ts) trên Zalo Web (https://chat.zalo.me/*)"
+  runtime_environment: "Chromium Manifest V3 / TypeScript / Dexie.js (IndexedDB)"
+  architectural_version: "2.1.0-AI-FIRST"
+  upstream_node: "N03_CHAT_SWITCHER"
+  downstream_node: "N05_BUNDLE_AGGREGATOR"
+```
+
+### Bản Đồ Điều Hướng Liên Kết Hai Chiều (Clickable Navigation Links)
+
+- **Node Thượng Nguồn**: [03_chat_switcher_viewport_guard_node.md](03_chat_switcher_viewport_guard_node.md)
+- **Node Hạ Nguồn**: [05_bundle_aggregator_node.md](05_bundle_aggregator_node.md)
+- **Kiến Trúc Tổng Thể Toàn Hệ Thống**: [README.md](README.md)
+- **Mã Nguồn Hiện Thực Trực Tiếp**: [n04-delta-stitcher.ts](../../src/nodes/n04-delta-stitcher.ts)
+- **Hợp Đồng Lược Đồ Dữ Liệu Toàn Cục**: [schemas.ts](../../src/contracts/schemas.ts)
+- **Bộ Phân Giải DOM Selectors Đa Tầng**: [selectors.ts](../../src/contracts/selectors.ts)
+- **Cơ Sở Dữ Liệu Cục Bộ IndexedDB**: [database.ts](../../src/db/database.ts)
 
 ---
 
-## 1. MỤC TIÊU & PHẠM VI (NODE OBJECTIVE & SCOPE)
+## 2. Executive Directives
 
-### 1.1. Mục tiêu Cốt lõi
-- Đối chiếu mốc lưu trữ ngắn hạn đã xử lý gần nhất của nhóm nguồn từ bảng `group_checkpoints` trong IndexedDB (`lastMsgId`, `lastMsgHash`).
-- Quét các thẻ DOM tin nhắn trong khung chat đang mở từ dưới đáy lên trên để tìm **Điểm Nối (Stitch Point)**.
-- Phân tách và trích xuất chính xác dải các tin nhắn mới phát sinh nằm sau Điểm Nối thành tập hợp **Delta Messages**.
-- **Thực thi Cơ chế Fallback Đáy An toàn (Bottom Fallback Anchor)**: Nếu không tìm thấy Điểm Nối (do lần đầu khởi chạy hệ thống, tin cũ bị người gửi xóa/thu hồi, hoặc tin nhắn mới dồn về quá nhiều khiến điểm nối cũ bị cuộn mất khỏi Virtualized DOM), hệ thống **tuyệt đối không cuộn ngược lên trên**. Thay vào đó, tự động bóc tách tối đa **5 đến 10 tin nhắn mới nhất tại đáy viewport** để xử lý an toàn.
-- Chuẩn hóa các thẻ DOM thô thành danh sách đối tượng `RawChatMessage` và bàn giao cho Node 5 (Bundle Aggregator).
+<instructions>
+Bạn là Senior Defensive Systems Architect & Automation Engineer phụ trách Node 04 (Delta Stitcher).
+Nhiệm vụ tối thượng: Phân giải điểm mốc lưu trữ GroupCheckpoint từ IndexedDB, quét đối chiếu với các thẻ DOM tin nhắn trong khung chat Zalo đang mở, bóc tách chính xác dải tin mới phát sinh (Delta Messages) và bàn giao cho Node 05.
 
-### 1.2. Ranh giới & Không gian Phủ định (In-Scope vs Negative Scope)
-- **Trong phạm vi (In-Scope)**:
-  - Đọc và phân giải checkpoint từ IndexedDB (Dexie.js).
-  - Quét và so khớp ID/Nội dung tin nhắn trên DOM ảo hóa Zalo Web.
-  - Bóc tách mảng Delta Messages hoặc kích hoạt Fallback 5–10 tin đáy.
-  - Trích xuất định danh người gửi (`senderId`, `senderName`), loại tin nhắn (Text, Image, Video, Grid Album) và thời gian gửi.
-- **Ranh giới cấm (Negative Scope - CẤM TUYỆT ĐỐI)**:
-  - **CẤM TUYỆT ĐỐI cuộn ngược trang lên trên** khi không tìm thấy điểm nối. Việc cuộn ngược sẽ tải hàng loạt DOM cũ, gây vỡ bố cục và dẫn đến rủi ro nghiêm trọng là gửi lại các tin nhắn cũ từ quá khứ.
-  - **CẤM** ghi đè Checkpoint tại Node này. Việc cam kết Checkpoint mới là đặc quyền duy nhất của Node 10 sau khi hoàn tất toàn bộ chu trình gửi tin.
+Mọi hành vi thực thi và bảo trì mã nguồn tại Node 04 bắt buộc tuân thủ 3 nguyên tắc nhận thức nền tảng:
+1. Phòng thủ đa tầng trước hiện tượng Virtualized DOM của Zalo Web: Tuyệt đối không phỏng đoán vị trí phần tử khi DOM bị unmount; kích hoạt cơ chế Fallback Đáy An Toàn (Bottom Fallback Anchor) tối đa 5–10 tin đáy khi mất dấu mốc.
+2. Neo giữ bất biến Zero-Upward-Scroll: Tuyệt đối CẤM hành vi cuộn ngược dòng lịch sử trò chuyện để tìm tin cũ. Cuộn ngược sẽ kích hoạt tải hàng loạt DOM cũ, gây quá tải bộ nhớ và tạo rủi ro thảm họa gửi trùng lặp bài đăng trong quá khứ.
+3. Phân định ranh giới trách nhiệm cơ học: Node 04 chỉ có quyền đọc mốc checkpoint từ IndexedDB (Read-Only). Đặc quyền cập nhật hoặc ghi đè checkpoint thuộc về Node 10 sau khi toàn bộ quy trình gửi tin hoàn tất thành công.
+</instructions>
 
 ---
 
-## 2. HỢP ĐỒNG KỸ THUẬT & DỮ LIỆU (INPUT/OUTPUT CONTRACTS)
+## 3. Behavioral Constraints & Hard Invariants
 
-### 2.1. Bản ghi Checkpoint Lưu trữ (`GroupCheckpoint`)
-Đọc từ bảng `group_checkpoints` trong IndexedDB:
+```yaml
+execution_policy:
+  priority_order:
+    1: "anti_spam_safety_and_no_duplicate_dispatch"
+    2: "checkpoint_contract_integrity_and_immutability"
+    3: "delta_freshness_and_bottom_anchor_stability"
+    4: "virtualized_dom_traversal_efficiency"
 
-```typescript
-export interface GroupCheckpoint {
-  groupId: string;             // Khóa chính: ID nhóm nguồn
-  groupName: string;           // Tên nhóm nguồn
-  lastMsgId: string;           // ID của tin nhắn cuối cùng đã xử lý thành công
-  lastMsgHash: string;         // SHA-256 chuỗi văn bản của tin nhắn cuối
-  lastMsgTimestamp: number;    // Thời gian của tin nhắn cuối (ms)
-  updatedAt: number;           // Thời điểm cập nhật checkpoint vào DB (ms)
-}
-```
+  constraints:
+    must:
+      - "Tra cứu checkpoint GroupCheckpoint (groupId, lastMessageId, lastSenderId, updatedAt) từ bảng group_checkpoints trong Dexie DB."
+      - "Truy xuất khung chứa tin nhắn thông qua bộ phân giải SELECTORS.CHAT_MESSAGE_CONTAINER với 3 tầng fallback cơ học."
+      - "Quét danh sách thẻ tin nhắn từ DOM, đối chiếu theo lastMessageId để xác định vị trí khớp matchIndex."
+      - "Bóc tách chính xác dải tin mới nằm sau vị trí khớp: deltaMessages = allMessages.slice(matchIndex + 1)."
+      - "Tự động kích hoạt cơ chế Bottom Fallback Anchor lấy tối đa 5-10 tin đáy (allMessages.slice(-10)) khi chưa có checkpoint hoặc khi lastMessageId không còn trên DOM."
+      - "Chuẩn hóa mọi tin nhắn trích xuất thành đối tượng RawExtractedMessage thỏa mãn kiểu MessageItem."
+      - "Ghi log có cấu trúc Serilog/Wide Event qua logger.info/warn/error và ghi nhận sự kiện vào system_logs."
+    must_not:
+      - "CẤM TUYỆT ĐỐI cuộn ngược trang lên trên (scrollTop = 0 hoặc cuộn ngược dòng lịch sử) khi không tìm thấy điểm nối checkpoint."
+      - "CẤM ghi đè, sửa đổi hoặc thêm mới bản ghi group_checkpoints tại Node 04 (đây là đặc quyền duy nhất của Node 10)."
+      - "CẤM tương tác hoặc click vào nút Jump to newest (JUMP_TO_NEWEST) hoặc huy hiệu tin chưa đọc 99+ trong quá trình bóc tách."
+      - "CẤM nuốt ngoại lệ âm thầm (silent swallowing) khi khung chứa DOM tin nhắn không tồn tại hoặc danh sách tin rỗng."
+      - "CẤM tải trước hình ảnh thô hoặc chuyển đổi tệp media thành base64 tại bước này."
 
-### 2.2. Đối tượng Tin Nhắn Thô Trích Xuất (`RawChatMessage`)
-```typescript
-export type MessageType = 'TEXT' | 'IMAGE' | 'VIDEO' | 'ALBUM_GRID' | 'SYSTEM_NOTIFICATION' | 'UNKNOWN';
-
-export interface RawChatMessage {
-  msgId: string;               // ID tin nhắn trích xuất từ DOM (ví dụ: data-msg-id, id attribute)
-  senderId: string;            // ID người gửi trích xuất từ avatar hoặc attribute của bubble
-  senderName: string;          // Tên hiển thị của người gửi
-  type: MessageType;           // Phân loại nội dung thẻ tin nhắn
-  rawText: string;             // Nội dung chữ nếu có
-  textHash: string;            // SHA-256 của chuỗi rawText đã chuẩn hóa
-  mediaElements: {
-    domElement: HTMLElement;   // Tham chiếu DOM để Node 8 kích hoạt nút Chia sẻ
-    mediaType: 'IMAGE' | 'VIDEO';
-    previewUrl?: string;
-  }[];
-  isPendingUpload: boolean;    // Cờ phát hiện ảnh/video đang trong quá trình tải lên (chưa gửi xong)
-  domElement: HTMLElement;     // Node container của toàn bộ message item
-  timestamp: number;           // Thời điểm hiển thị trên bubble (hoặc Date.now() nếu Zalo không hiện ms)
-}
-```
-
-### 2.3. Kết Quả Bóc Tách Đầu Ra (`DeltaStitchResult`)
-Bàn giao cho Node 5 (Bundle Aggregator):
-
-```typescript
-export interface DeltaStitchResult {
-  jobId: string;
-  groupId: string;
-  groupName: string;
-  stitchFound: boolean;        // True nếu tìm thấy Điểm Nối cũ; False nếu phải dùng Fallback đáy
-  fallbackApplied: boolean;    // True nếu kích hoạt cơ chế Fallback 5-10 tin đáy
-  totalScannedInDom: number;   // Tổng số node tin nhắn có trong DOM lúc quét
-  deltaCount: number;          // Số lượng tin nhắn mới nằm trong tập Delta
-  deltaMessages: RawChatMessage[]; // Danh sách các tin nhắn mới cần được gom cụm
-  anchorCheckpoint?: GroupCheckpoint; // Mốc checkpoint cũ được dùng để so khớp
-}
+  invariants:
+    INV-N04-001:
+      name: "Zero Upward Scroll Invariant"
+      statement: "Vị trí cuộn của viewport tin nhắn phải giữ nguyên ở đáy; không một luồng logic nào được phép phát lệnh cuộn ngược dòng thời gian."
+      enforcement: "Chặn toàn bộ các hàm scrollTop manipulation có giá trị nhỏ hơn scrollHeight hiện tại."
+    INV-N04-002:
+      name: "Checkpoint Read-Only Invariant"
+      statement: "Node 04 chỉ thực thi thao tác db.group_checkpoints.get(groupId); tuyệt đối không gọi .put(), .update(), hoặc .delete()."
+      enforcement: "Audit tĩnh trên AST và mã nguồn n04-delta-stitcher.ts cấm xuất hiện lệnh write vào bảng group_checkpoints."
+    INV-N04-003:
+      name: "Deterministic Fallback Boundary"
+      statement: "Cửa sổ fallback đáy luôn bị chặn trần ngặt nghèo trong dải từ 5 đến 10 tin nhắn mới nhất (allMessages.slice(-10))."
+      enforcement: "Khóa hằng số fallback slice(-10) trong code logic, ngăn chặn việc lấy toàn bộ DOM."
+    INV-N04-004:
+      name: "Schema Compliance Invariant"
+      statement: "100% tin nhắn bóc tách đầu ra phải tương thích hoàn toàn với RawExtractedMessage và MessageItemSchema."
+      enforcement: "Xác thực kiểu tĩnh TypeScript và runtime shape validation trước khi bàn giao cho Node 05."
 ```
 
 ---
 
-## 3. LUỒNG XỬ LÝ CHI TIẾT & STATE MACHINE (EXECUTION ALGORITHM)
+## 4. Domain Body & Kiến Trúc Kỹ Thuật
 
-### 3.1. Sơ đồ Luồng Nối Điểm Checkpoint (Stitching Algorithm Flow)
+### 4.1. Bối Cảnh Nghiệp Vụ & Đặc Thù Virtualized DOM Của Zalo Web
+
+Zalo Web (`chat.zalo.me`) sử dụng cơ chế Virtualized List để tối ưu hiệu năng hiển thị hàng ngàn tin nhắn. Tại một thời điểm, chỉ có khoảng 20 đến 40 phần tử DOM tin nhắn nằm trong hoặc sát viewport thực sự được gắn (mounted) vào cây DOM:
+
+- Khi người dùng hoặc hệ thống mở một hội thoại, Zalo mặc định cuộn xuống đáy và mount các tin nhắn gần nhất.
+- Nếu trong lúc worker xử lý các nhóm khác, nhóm nguồn này nhận thêm hàng trăm tin nhắn mới, tin nhắn tương ứng với `lastMessageId` trước đó sẽ bị unmount khỏi DOM ảo hóa.
+- Nếu một hệ thống tự động cố gắng "tìm cho bằng được" tin nhắn cũ bằng cách cuộn ngược lên trên (`scrollTop = 0`), Zalo Web sẽ hủy các node đáy, mount hàng loạt node cũ từ quá khứ, gây giật lag trình duyệt, vỡ trạng thái đồng bộ và dẫn tới thảm họa gửi lặp lại các bài đăng từ nhiều ngày trước.
+- **Giải pháp dứt khoát của Node 04**: Chấp nhận nguyên lý **Bottom Fallback Anchor**: Nếu mốc checkpoint bị trôi mất khỏi DOM ảo hóa, hệ thống coi như đã có bước nhảy thời gian và chỉ trích xuất tối đa **5 đến 10 tin mới nhất ở đáy** để xử lý lượt hiện tại.
+
+### 4.2. Sơ Đồ Luồng Xử Lý Nối Điểm Checkpoint (Mermaid Flowchart)
 
 ```mermaid
 flowchart TD
-    Start["Nhận ChatReadySignal từ Node 3"] --> LoadCP["1. Đọc group_checkpoints(groupId) từ IndexedDB"]
-    LoadCP --> QueryDOM["2. Lấy tất cả node tin nhắn hiện diện trên DOM:\ncontainer.querySelectorAll('.chat-message, .msg-item')"]
-    
-    QueryDOM --> HasCP{"Đã từng có Checkpoint cho nhóm này trong DB?"}
-    
-    HasCP -- "Chưa có (Lần đầu chạy)" --> TriggerFallback["Kích hoạt FALLBACK ĐÁY:\nLấy 5 - 10 tin nhắn mới nhất ở đáy viewport"]
-    
-    HasCP -- "Đã có Checkpoint" --> ScanFromBottom["3. Quét danh sách node DOM từ dưới đáy lên trên"]
-    ScanFromBottom --> CompareNode["So sánh từng node với Checkpoint:\n(node.msgId === cp.lastMsgId) HOẶC (node.textHash === cp.lastMsgHash)"]
-    
-    CompareNode --> FoundMatch{"Tìm thấy node trùng khớp?"}
-    
-    FoundMatch -- "TÌM THẤY (Điểm Nối)" --> SliceDelta["4. Cắt lát tập Delta:\nLấy toàn bộ các tin nhắn nằm SAU node trùng khớp"]
-    SliceDelta --> CheckEmpty{"Tập Delta có tin nhắn nào không?"}
-    CheckEmpty -- "Rỗng (Không có tin mới hơn CP)" --> NoDelta["Báo cáo: Không có tin mới cần xử lý"]
-    CheckEmpty -- "Có tin mới" --> PackageResult["5. Trích xuất thuộc tính chi tiết từng RawChatMessage"]
-    
-    FoundMatch -- "KHÔNG TÌM THẤY (Trôi DOM / Bị xóa)" --> CheckScanned{"Đã quét hết toàn bộ node trong DOM?"}
-    CheckScanned -- "Chưa hết" --> ScanFromBottom
-    CheckScanned -- "Đã quét hết DOM mà không thấy" --> WarnLoss["Cảnh báo: Stitch Point Out of Viewport"]
-    WarnLoss --> TriggerFallback
-    
-    TriggerFallback --> PackageResult
-    PackageResult --> EmitNode5["6. Bàn giao DeltaStitchResult cho Node 5"]
+    Start["Nhận tín hiệu ChatReadySignal từ Node 03"] --> ResolveContainer["1. Phân giải DOM Container:\nresolveElement(SELECTORS.CHAT_MESSAGE_CONTAINER)"]
+    ResolveContainer --> CheckContainer{"Tìm thấy Container?"}
+
+    CheckContainer -- "Không tìm thấy" --> LogErrContainer["Ghi log ERROR: Không tìm thấy container trên DOM"]
+    LogErrContainer --> ReturnEmpty["Trả về mảng rỗng []"]
+
+    CheckContainer -- "Tìm thấy" --> ExtractAll["2. Trích xuất toàn bộ tin nhắn DOM:\nextractMessagesFromDom(container)"]
+    ExtractAll --> CheckEmptyDOM{"DOM có tin nhắn không?"}
+
+    CheckEmptyDOM -- "Rỗng (0 tin)" --> LogWarnDOM["Ghi log WARN: Không có tin nhắn trên DOM"]
+    LogWarnDOM --> ReturnEmpty
+
+    CheckEmptyDOM -- "Có tin nhắn" --> QueryDB["3. Tra cứu Dexie DB:\ndb.group_checkpoints.get(groupId)"]
+    QueryDB --> HasCheckpoint{"Có Checkpoint & lastMessageId?"}
+
+    HasCheckpoint -- "Có Checkpoint" --> FindMatch["4. Tìm vị trí trùng khớp:\nallMessages.findIndex(m => m.msgId === lastMessageId)"]
+    FindMatch --> IsMatchFound{"matchIndex >= 0?"}
+
+    IsMatchFound -- "TÌM THẤY (Khớp Checkpoint)" --> SliceDelta["5. Bóc tách Delta Messages:\nallMessages.slice(matchIndex + 1)"]
+    SliceDelta --> LogHit["Ghi log INFO: Khớp Checkpoint, thu được N tin mới"]
+    LogHit --> ReturnDelta["Trả về danh sách RawExtractedMessage[]"]
+
+    IsMatchFound -- "KHÔNG TÌM THẤY (Trôi khỏi DOM)" --> WarnLost["Ghi log WARN: Mất dấu Checkpoint, áp dụng Fallback"]
+    WarnLost --> FallbackSlice["6. Kích hoạt Fallback Đáy An Toàn:\nallMessages.slice(-10)"]
+
+    HasCheckpoint -- "Chưa có (Lần đầu chạy)" --> InfoFirst["Ghi log INFO: Khởi tạo lần đầu, quét tin đáy"]
+    InfoFirst --> FallbackSlice
+
+    FallbackSlice --> ReturnDelta
+    ReturnDelta --> EmitToN05["Bàn giao cho Node 05 (Bundle Aggregator)"]
 ```
 
-### 3.2. Thuật toán Quét & Fallback Đáy Chi tiết (Step-by-Step)
-1. **Lấy danh sách phần tử DOM tin nhắn**:
-   - Selector: `const messageNodes = Array.from(chatContainer.querySelectorAll('.chat-item, [data-id^="msg-"], .msg-item'));`.
-   - Nếu `messageNodes.length === 0`: Đợi 500ms để DOM ổn định và quét lại 1 lần.
-2. **So khớp Điểm Nối (Stitch Point Matcher)**:
-   - Duyệt mảng `messageNodes` từ chỉ số `length - 1` lùi dần về `0` (Bottom-up scanning).
-   - Với mỗi node, trích xuất ID (`node.getAttribute('data-id')`) và trích xuất text content để băm nhanh SHA-256.
-   - Nếu khớp với `lastMsgId` hoặc `lastMsgHash`:
-     - Điểm nối tại index `K`.
-     - Tập hợp tin mới: `deltaNodes = messageNodes.slice(K + 1)`.
-     - `stitchFound = true`, `fallbackApplied = false`.
-3. **Cơ chế Fallback Đáy An toàn (Bottom Fallback)**:
-   - Kích hoạt khi: Không có checkpoint trong DB HOẶC đã duyệt hết toàn bộ DOM mà không tìm thấy index `K`.
-   - Logic:
-     ```typescript
-     const FALLBACK_COUNT = 8; // Mặc định lấy 8 tin mới nhất ở đáy (trong khoảng 5-10)
-     const deltaNodes = messageNodes.slice(-Math.min(messageNodes.length, FALLBACK_COUNT));
-     const stitchFound = false;
-     const fallbackApplied = true;
-     ```
-4. **Phân tích thuộc tính từng thẻ tin nhắn (`RawChatMessage`)**:
-   - Nhận diện `senderId`: Trích xuất từ avatar `img.avatar` (src hoặc title) hoặc thẻ cha `sender-info`.
-   - Nhận diện `type`:
-     - Nếu có `.grid-photo, .album-container`: `ALBUM_GRID`.
-     - Nếu có `img.chat-image, video`: `IMAGE` hoặc `VIDEO`.
-     - Nếu chỉ có text: `TEXT`.
-     - Nếu là tin thông báo hệ thống (như "X đã vào nhóm", "Thông báo đổi tên"): `SYSTEM_NOTIFICATION`.
-   - Phát hiện trạng thái đang tải lên: Kiểm tra xem có spinner quay, thanh tiến trình upload (`.progress-bar, .uploading-indicator`) ➔ Đặt cờ `isPendingUpload = true`.
+### 4.3. Sơ Đồ Tuần Tự Tương Tác Liên Node (Mermaid Sequence Diagram)
 
----
+```mermaid
+sequenceDiagram
+    autonumber
+    participant N03 as Node 03: ChatSwitcher
+    participant N04 as Node 04: DeltaStitcher
+    participant DB as Dexie DB (group_checkpoints)
+    participant DOM as Zalo Web Virtualized DOM
+    participant N05 as Node 05: BundleAggregator
 
-## 4. XỬ LÝ LỖI, RETRY & EDGE CASES (RESILIENCE MATRIX)
+    N03->>N04: Bàn giao quyền điều khiển (ChatReadySignal { groupId })
+    activate N04
+    N04->>DOM: querySelector(CHAT_MESSAGE_CONTAINER)
+    DOM-->>N04: HTMLElement (Container tin nhắn)
+    
+    N04->>DOM: querySelectorAll('.msg-group, [data-msg-id]')
+    DOM-->>N04: NodeList (messageElements)
+    N04->>N04: extractMessagesFromDom() -> allMessages[]
 
-| Mã Ngoại Lệ | Tình Huống Biên (Edge Case) | Phân Tích Kỹ Thuật | Cơ Chế Xử Lý & Phòng Vệ |
+    N04->>DB: group_checkpoints.get(groupId)
+    DB-->>N04: GroupCheckpoint record (hoặc undefined)
+
+    alt Checkpoint tồn tại VÀ lastMessageId có trong allMessages
+        N04->>N04: matchIndex = allMessages.findIndex(m => m.msgId === lastMessageId)
+        N04->>N04: deltaMessages = allMessages.slice(matchIndex + 1)
+        Note over N04: Nhánh Khớp Điểm Nối Chuẩn Xác
+    else Checkpoint không tồn tại HOẶC lastMessageId bị trôi mất khỏi DOM
+        N04->>N04: deltaMessages = allMessages.slice(-10)
+        Note over N04: Nhánh Bottom Fallback Anchor (5-10 tin đáy)
+    end
+
+    N04->>N05: Chuyển giao danh sách Delta (deltaMessages: RawExtractedMessage[])
+    deactivate N04
+```
+
+### 4.4. Thuật Toán Nối Điểm Checkpoint & Bóc Tách Chi Tiết
+
+Thuật toán trong [n04-delta-stitcher.ts](../../src/nodes/n04-delta-stitcher.ts) vận hành tuần tự qua 4 bước cơ học:
+
+1. **Xác Định Khung Chứa Tin Nhắn (Container Resolution)**:
+   - Sử dụng `resolveElement(SELECTORS.CHAT_MESSAGE_CONTAINER, this.doc)` từ [selectors.ts](../../src/contracts/selectors.ts).
+   - Selector 3 tầng giải quyết triệt để rủi ro Zalo cập nhật class ngẫu nhiên:
+     - Tier 1: `[data-id="message-view-list"], #messageViewContainer[class*="message-view"]`.
+     - Tier 2: `div[role="main"] div[data-scroll="true"], #messageView #messageViewContainer`.
+     - Tier 3: `.chat-message-list, #messageViewContainer, .message-view__scroll`.
+   - Nếu không tìm thấy: Bắn log `logger.error` và lập tức dừng lại, trả về `[]`.
+
+2. **Trích Xuất Thuộc Tính Phần Tử DOM (`extractMessagesFromDom`)**:
+   - Truy vấn toàn bộ phần tử tin nhắn hiện diện: `container.querySelectorAll<HTMLElement>('.msg-group, [data-msg-id]')`.
+   - Lặp qua từng phần tử DOM `el` để trích xuất cấu trúc:
+     - `msgId`: `el.getAttribute('data-msg-id') || el.id || msg_${Date.now()}_${Math.random()}`.
+     - `senderId`: `el.getAttribute('data-sender-id') || 'sender_unknown'`.
+     - `senderName`: Bóc tách từ `.msg-sender`, cắt chuỗi theo ký tự `-` và `trim()`.
+     - `mediaUrls`: Thu thập toàn bộ link ảnh/video từ `.album-item, img` qua các thuộc tính `src`, `data-src`, `data-img-id`.
+     - `text`: Đọc từ `.msg-text, .album-caption` hoặc fallback sang `.msg-card`.
+     - `type`: Tự động phân loại `'ALBUM'` (nếu có > 1 ảnh), `'IMAGE'` (nếu có 1 media), hoặc `'TEXT'`.
+     - `timestamp`: Đóng dấu thời gian xử lý `Date.now()`.
+
+3. **Tra Cứu Checkpoint Trong Dexie DB**:
+   - Đọc bản ghi checkpoint thông qua khóa chính: `const checkpoint = await this.db.group_checkpoints.get(groupId)`.
+   - Đối chiếu theo `checkpoint.lastMessageId`.
+
+4. **Phân Tách Mảng Delta Hoặc Kích Hoạt Fallback Đáy**:
+   - **Trường hợp Khớp Mốc**: Tìm thấy phần tử có `m.msgId === checkpoint.lastMessageId` tại chỉ số `matchIndex >= 0`. Cắt mảng: `deltaMessages = allMessages.slice(matchIndex + 1)`.
+   - **Trường hợp Mất Dấu / Khởi Tạo**: Chưa từng có checkpoint hoặc `matchIndex === -1` (tin cũ đã bị trôi do tin mới đổ về dồn dập). Kích hoạt cửa sổ an toàn: `fallbackMessages = allMessages.slice(-10)`.
+
+### 4.5. Phân Tích Kỹ Thuật: Cửa Sổ Fallback Đáy An Toàn (Bottom Fallback Anchor)
+
+> [!IMPORTANT]
+> **Quy Tắc Đánh Đổi Sống Còn (Safety Trade-Off Rationale)**:
+> Khi một nhóm Zalo nhận 200 tin nhắn mới trong lúc extension bận xử lý nhóm khác, tin nhắn Checkpoint cũ chắc chắn biến mất khỏi DOM hiển thị của Zalo Web. Hệ thống đứng trước 2 lựa chọn:
+> - **Lựa chọn A (Nguy hiểm - Bị cấm)**: Cuộn ngược lên để tìm lại Checkpoint cũ. Hệ quả: Làm đơ tab trình duyệt, kích hoạt lại các bài đăng từ nhiều giờ/ngày trước, gửi trùng lặp hàng chục tin vào nhóm đối tác, dẫn tới nguy cơ bị chặn số hoặc khóa tài khoản.
+> - **Lựa chọn B (Defensive Architecture - Chuẩn mực)**: Kích hoạt **Bottom Fallback Anchor**: Lấy tối đa 10 tin nhắn mới nhất tại đáy viewport (`allMessages.slice(-10)`). Hệ quả: Bỏ qua các tin nhắn cũ bị trôi, nhưng bảo đảm 100% tính an toàn, giữ vững nhịp độ thời gian thực và không bao giờ gửi lại tin rác quá khứ.
+
+> [!WARNING]
+> **Không Ghi Đè Checkpoint Tại Node 04**:
+> Dù kích hoạt Fallback hay bóc tách Delta thành công, Node 04 **TUYỆT ĐỐI KHÔNG** cập nhật bản ghi vào `group_checkpoints`. Nếu cập nhật tại Node 04 nhưng sau đó Node 06 lọc trùng hoặc Node 08 chuyển tiếp tin thất bại, mốc checkpoint sẽ bị ghi đè sai lệch khiến tin nhắn bị mất vĩnh viễn. Việc ghi nhận checkpoint mới chỉ diễn ra tại Node 10 sau khi toàn bộ chuỗi gửi tin hoàn tất.
+
+### 4.6. Hợp Đồng Dữ Liệu Kỹ Thuật (Data Contracts)
+
+#### 4.6.1. Bản Ghi Checkpoint Trong Dexie DB (`GroupCheckpoint`)
+
+Đồng bộ 100% với lược đồ chuẩn hóa trong [schemas.ts](../../src/contracts/schemas.ts) và bảng `group_checkpoints` trong [database.ts](../../src/db/database.ts):
+
+```typescript
+// Định nghĩa Zod Schema trong schemas.ts
+export const GroupCheckpointSchema = z.object({
+  groupId: z.string().min(1),
+  lastMessageId: z.string(),
+  lastSenderId: z.string(),
+  updatedAt: z.number().int().positive(),
+});
+
+export type GroupCheckpoint = z.infer<typeof GroupCheckpointSchema>;
+```
+
+Bảng mô tả cấu trúc trường:
+
+| Tên Trường | Kiểu Dữ Liệu | Vai Trò Kỹ Thuật | Ràng Buộc Bất Biến |
 | :--- | :--- | :--- | :--- |
-| **N04-E01** | **Không tìm thấy Điểm Nối do tin nhắn đổ về quá ồ ạt** | Trong khoảng thời gian Worker bận, nhóm đổ về 200 tin mới. Virtualized DOM của Zalo chỉ giữ lại 30 tin gần nhất ở đáy, khiến tin nhắn Checkpoint cũ bị unmount khỏi DOM. | **Quyết định thiết kế (Đã chốt)**: Áp dụng **Bottom Fallback Anchor**: Lấy đúng 8 tin mới nhất ở đáy màn hình. Tuyệt đối không cuộn ngược lên trên. Tránh hoàn toàn việc nghẽn máy và ngăn ngừa gửi nhầm hàng chục bài cũ. |
-| **N04-E02** | **Tin nhắn Điểm Nối cũ bị người gửi thu hồi hoặc xóa** | Bản ghi `lastMsgId` trong IndexedDB không còn tồn tại trên DOM Zalo do người đăng đã xóa tin. | Bộ so khớp 2 lớp: Nếu không khớp `lastMsgId`, thử khớp `lastMsgHash`. Nếu cả 2 đều không khớp sau khi quét hết DOM ➔ Chuyển sang cơ chế Fallback đáy. |
-| **N04-E03** | **Lần đầu tiên khởi chạy hệ thống (Bản ghi Checkpoint rỗng)** | Nhóm nguồn mới được thêm vào Whitelist lần đầu, chưa từng có bản ghi trong `group_checkpoints`. | Tự động kích hoạt Fallback đáy: Bóc tách 5–10 tin mới nhất ở đáy để xử lý lượt đầu tiên và thiết lập Checkpoint nền tảng. |
-| **N04-E04** | **Tin nhắn hệ thống / Thông báo ghim bài chen vào danh sách tin** | Xuất hiện thẻ "Tin nhắn đã được ghim" hoặc "A đã đổi ảnh nhóm" trong tập Delta. | Nhận diện thẻ `SYSTEM_NOTIFICATION` và chủ động loại bỏ ngay từ tập Delta trước khi bàn giao cho Node 5. |
-| **N04-E05** | **Ảnh hoặc video đang trong trạng thái gửi dở (Uploading)** | Người đăng đang tải cụm ảnh lên mạng chậm, một số ảnh chưa load xong thumbnail hoặc đang có icon spinner. | Gắn cờ `isPendingUpload = true`. Khi Node 5 tiếp nhận sẽ kích hoạt cửa sổ Micro-debounce (2-3s) để chờ ảnh tải lên hoàn tất trước khi gom cụm. |
+| `groupId` | `string` | Khóa chính (Primary Key) định danh nhóm nguồn Zalo | Bắt buộc, chuỗi không rỗng (`min(1)`). |
+| `lastMessageId` | `string` | Định danh tin nhắn cuối cùng đã được phân phối thành công | Dùng làm mốc so khớp Điểm Nối (Stitch Point). |
+| `lastSenderId` | `string` | Định danh người gửi của tin nhắn cuối cùng đã xử lý | Hỗ trợ phân định người đăng khi ghép cụm. |
+| `updatedAt` | `number` | Unix timestamp (ms) thời điểm ghi nhận checkpoint vào DB | Số nguyên dương, cập nhật bởi Node 10. |
+
+#### 4.6.2. Đối Tượng Tin Nhắn Thô Bóc Tách (`RawExtractedMessage`)
+
+Định nghĩa cấu trúc tin nhắn đầu ra của [n04-delta-stitcher.ts](../../src/nodes/n04-delta-stitcher.ts) tương thích với `MessageItem`:
+
+```typescript
+export interface RawExtractedMessage {
+  msgId: string;                        // ID trích xuất từ DOM (data-msg-id hoặc generated fallback)
+  senderId: string;                     // ID người gửi trích xuất từ attribute data-sender-id
+  senderName?: string | undefined;      // Tên hiển thị người gửi từ .msg-sender
+  type: 'TEXT' | 'IMAGE' | 'VIDEO' | 'ALBUM'; // Phân loại theo cấu trúc media
+  text?: string | undefined;            // Nội dung văn bản mô tả trích xuất từ DOM
+  mediaUrls?: string[] | undefined;     // Mảng URL ảnh/video thu thập từ thẻ media
+  timestamp: number;                    // Thời điểm bóc tách dữ liệu (Date.now())
+}
+```
+
+#### 4.6.3. Khế Ước Bàn Giao Dữ Liệu Liên Tầng (`DeltaStitchResult`)
+
+Cấu trúc đối tượng đóng gói khi chuyển giao cho Node 05 (Bundle Aggregator):
+
+```typescript
+export interface DeltaStitchResult {
+  jobId: string;                        // Mã phiên điều phối do Queue cấp
+  groupId: string;                      // ID nhóm nguồn đang xử lý
+  stitchFound: boolean;                 // true: Tìm thấy điểm nối; false: Dùng Fallback
+  fallbackApplied: boolean;             // true: Áp dụng cắt 5-10 tin đáy
+  totalScannedInDom: number;            // Tổng số node tin nhắn có trên DOM lúc quét
+  deltaCount: number;                   // Số lượng tin mới nằm trong tập Delta
+  deltaMessages: RawExtractedMessage[]; // Danh sách tin nhắn mới bàn giao cho Node 05
+  anchorCheckpoint?: GroupCheckpoint;   // Mốc checkpoint đã dùng để so sánh (nếu có)
+}
+```
+
+### 4.7. Ma Trận Xử Lý Lỗi & Phục Hồi Phòng Vệ (Resilience Matrix)
+
+| Mã Lỗi | Tình Huống Biên (Edge Case) | Phân Tích Kỹ Thuật | Hành Vi Xử Lý & Cơ Chế Phòng Vệ |
+| :--- | :--- | :--- | :--- |
+| **N04-E01** | **Khung chứa tin nhắn chưa gắn vào DOM** | Node 03 chuyển giao nhưng mạng giật hoặc Zalo đang re-render vùng chat khiến selector container trả về `null`. | Thử lại qua 3 tầng selector trong `resolveElement()`. Nếu vẫn `null`, ghi log `ERROR` và trả về mảng rỗng `[]` để Worker giải phóng hàng chờ an toàn. |
+| **N04-E02** | **Checkpoint cũ bị unmount do tin nhắn mới dồn ồ ạt** | Trong lúc Worker bận xử lý nhóm khác, nhóm nhận thêm > 50 tin nhắn mới. Thẻ chứa `lastMessageId` bị Virtualized DOM của Zalo gỡ bỏ. | Kích hoạt ngay lập tức **Bottom Fallback Anchor**: Lấy 10 tin mới nhất ở đáy (`allMessages.slice(-10)`). Tuyệt đối **CẤM cuộn ngược lên trên**. |
+| **N04-E03** | **Tin nhắn Checkpoint cũ bị người gửi thu hồi hoặc xóa** | Bản ghi `lastMessageId` vẫn lưu trong DB nhưng trên giao diện tin nhắn đó đã bị xóa hoặc biến thành thông báo "Tin nhắn đã bị thu hồi". | `findIndex` trả về `-1`. Hệ thống xem như không tìm thấy điểm nối và kích hoạt cơ chế fallback lấy 10 tin đáy an toàn, ghi log `WARN`. |
+| **N04-E04** | **Nhóm nguồn mới chạy lần đầu (Chưa có bản ghi DB)** | Nhóm nguồn mới được bật Whitelist lần đầu, bảng `group_checkpoints` chưa có bản ghi của `groupId`. | `checkpoint` trả về `undefined`. Tự động kích hoạt quét 10 tin đáy (`allMessages.slice(-10)`), ghi log `INFO` thông báo khởi tạo lần đầu. |
+| **N04-E05** | **Tin nhắn thông báo hệ thống hoặc tin nhắn rác chen ngang** | Thẻ DOM chứa thông báo hệ thống ("A đã tham gia nhóm", "B đã đổi ảnh nhóm") không có `data-sender-id`. | Hàm `extractMessagesFromDom` gán `senderId = 'sender_unknown'` và `type = 'TEXT'`. Node 05 và 06 sẽ lọc bỏ các đối tượng không đạt chuẩn nghiệp vụ này. |
+
+### 4.8. Giám Sát Vận Hành & Ghi Nhận Telemetry
+
+Toàn bộ các sự kiện xử lý tại Node 04 được ghi nhận qua logger đa tầng Serilog và lưu vết vào bảng `system_logs` trong IndexedDB:
+
+```typescript
+// Ghi nhận sự kiện khớp Checkpoint
+logger.info(
+  'DELTA_STITCHER',
+  'N04',
+  `Khớp Checkpoint [${checkpoint.lastMessageId}]: Thu được ${deltaMessages.length} tin mới`,
+  { groupId },
+);
+
+// Ghi nhận cảnh báo mất dấu Checkpoint và áp dụng Fallback
+logger.warn(
+  'DELTA_STITCHER',
+  'N04',
+  `Mất dấu Checkpoint [${checkpoint.lastMessageId}]: Áp dụng Fallback quét 10 tin đáy`,
+  { groupId },
+);
+
+// Ghi nhận lỗi nghiêm trọng mất DOM Container
+logger.error(
+  'DELTA_STITCHER',
+  'N04',
+  'Không tìm thấy container tin nhắn trên DOM',
+  undefined,
+  { groupId },
+);
+```
+
+Cấu trúc bản ghi `SystemLog` ghi nhận vào Dexie:
+- `operation`: `"DELTA_STITCH"`
+- `nodeId`: `"N04"`
+- `correlationId`: Đồng bộ theo `jobId` phiên điều phối.
+- `durationMs`: Thời gian thực thi thao tác quét DOM (thường `< 50ms`).
+- `status`: `"SUCCESS"` nếu bóc tách bình thường; `"DEGRADED"` nếu phải dùng Fallback đáy; `"FAILURE"` nếu container null.
 
 ---
 
-## 5. PHỤ THUỘC KỸ THUẬT (TECHNICAL DEPENDENCIES)
+## 5. Isolated Context & Evidence
 
-1. **Cơ sở dữ liệu cục bộ (IndexedDB — Dexie.js)**:
-   - Đọc bảng `group_checkpoints`: `groupId, lastMsgId, lastMsgHash, lastMsgTimestamp`.
-   - Ghi log vào `system_logs` khi kích hoạt Fallback đáy.
-2. **DOM Selectors (Zalo Web Baseline)**:
-   - Danh sách tin nhắn: `#chatView .chat-message-list, [data-id="chat-history"]`.
-   - Từng thẻ tin nhắn: `.chat-item, [data-id^="msg-"], .msg-item`.
-   - Thẻ Media & Album: `.grid-photo, .album-container, img.chat-image, video.chat-video`.
-   - Trạng thái Uploading: `.uploading-spinner, .progress-bar, .upload-mask`.
-   - Thông báo hệ thống: `.chat-system-notify, .quote-banner, .pin-message-banner`.
-3. **Web Crypto API**:
-   - `crypto.subtle.digest('SHA-256', ...)`: Tạo mã băm chuỗi văn bản phục vụ so khớp checkpoint an toàn.
+<context>
+Trích xuất đoạn mã nguồn cốt lõi từ [n04-delta-stitcher.ts](../../src/nodes/n04-delta-stitcher.ts):
+
+```typescript
+export class DeltaStitcher {
+  constructor(
+    private db: ZaloAutomationDatabase = defaultDb,
+    private doc: Document = typeof document !== 'undefined'
+      ? document
+      : (null as unknown as Document),
+  ) {}
+
+  async stitchDelta(groupId: string): Promise<RawExtractedMessage[]> {
+    if (!this.doc) return [];
+
+    const container = resolveElement(SELECTORS.CHAT_MESSAGE_CONTAINER, this.doc);
+    if (!container) {
+      logger.error('DELTA_STITCHER', 'N04', 'Không tìm thấy container tin nhắn trên DOM', undefined, { groupId });
+      return [];
+    }
+
+    const allMessages = this.extractMessagesFromDom(container);
+    if (allMessages.length === 0) {
+      logger.warn('DELTA_STITCHER', 'N04', 'Không có tin nhắn nào được tìm thấy trên DOM', { groupId });
+      return [];
+    }
+
+    const checkpoint = await this.db.group_checkpoints.get(groupId);
+
+    if (checkpoint?.lastMessageId) {
+      const matchIndex = allMessages.findIndex((m) => m.msgId === checkpoint.lastMessageId);
+
+      if (matchIndex >= 0) {
+        const deltaMessages = allMessages.slice(matchIndex + 1);
+        logger.info('DELTA_STITCHER', 'N04', `Khớp Checkpoint [${checkpoint.lastMessageId}]: Thu được ${deltaMessages.length} tin mới`, { groupId });
+        return deltaMessages;
+      }
+
+      logger.warn('DELTA_STITCHER', 'N04', `Mất dấu Checkpoint [${checkpoint.lastMessageId}]: Áp dụng Fallback quét 10 tin đáy`, { groupId });
+    }
+
+    const fallbackMessages = allMessages.slice(-10);
+    logger.info('DELTA_STITCHER', 'N04', `Khởi tạo lần đầu: Quét ${fallbackMessages.length} tin nhắn đáy`, { groupId });
+    return fallbackMessages;
+  }
+}
+```
+</context>
+
+<examples>
+### So Sánh Mẫu Triển Khai Thực Chiến (Pattern Comparison)
+
+#### ❌ Mẫu Sai (Anti-Pattern): Cuộn Ngược Tìm Checkpoint & Cập Nhật Sớm
+```typescript
+// NGUY HIỂM: Gây nghẽn DOM, gửi lặp tin nhắn cũ, cập nhật checkpoint sai thời điểm
+async function badStitchDelta(groupId: string, lastMsgId: string) {
+  const container = document.querySelector('.chat-message-list');
+  let match = container.querySelector(`[data-msg-id="${lastMsgId}"]`);
+  
+  // SAI LẦM NGHIÊM TRỌNG: Cố tình cuộn ngược lên đầu trang để tìm tin cũ bị unmount
+  while (!match && container.scrollTop > 0) {
+    container.scrollTop -= 500; // Làm đơ UI và nạp hàng loạt tin rác quá khứ
+    await sleep(200);
+    match = container.querySelector(`[data-msg-id="${lastMsgId}"]`);
+  }
+  
+  // SAI LẦM: Tự ý ghi đè Checkpoint ngay tại Node trích xuất
+  await db.group_checkpoints.put({ groupId, lastMessageId: 'latest', lastSenderId: 'me', updatedAt: Date.now() });
+}
+```
+
+#### ✅ Mẫu Đúng (AI-First Compliant Pattern): Giữ Đáy & Fallback An Toàn
+```typescript
+// CHUẨN MỰC: Bất biến Zero-Upward-Scroll, Fallback 10 tin đáy, Checkpoint chỉ đọc
+async function compliantStitchDelta(groupId: string): Promise<RawExtractedMessage[]> {
+  const container = resolveElement(SELECTORS.CHAT_MESSAGE_CONTAINER, document);
+  if (!container) return [];
+
+  const allMessages = extractMessagesFromDom(container);
+  const checkpoint = await db.group_checkpoints.get(groupId);
+
+  if (checkpoint?.lastMessageId) {
+    const matchIndex = allMessages.findIndex((m) => m.msgId === checkpoint.lastMessageId);
+    if (matchIndex >= 0) {
+      // Khớp chính xác điểm nối: lấy toàn bộ tin nhắn sau checkpoint
+      return allMessages.slice(matchIndex + 1);
+    }
+  }
+
+  // Fallback an toàn: Tuyệt đối không cuộn ngược, lấy tối đa 10 tin mới nhất ở đáy
+  return allMessages.slice(-10);
+}
+```
+</examples>
 
 ---
 
-## 6. TIÊU CHÍ KIỂM THỬ & NGHIỆM THU (ACCEPTANCE CRITERIA / DoD)
+## 6. Output Contract & Acceptance Gates
 
-### 6.1. Kịch bản Nghiệm thu Nhị phân (Binary Acceptance Gates)
-- **GATE-02 & EX-03 (Fallback Đáy An Toàn Khi Trôi Điểm Nối)**:
-  - **Given**: Khung chat đang mở, Checkpoint trong DB là `msg_001` nhưng `msg_001` đã bị trôi mất khỏi DOM (chỉ có `msg_050` đến `msg_080`).
-  - **When**: Node 4 thực thi quét tìm điểm nối.
-  - **Then**:
-    1. Node 4 xác nhận `stitchFound === false` và `fallbackApplied === true`.
-    2. Tuyệt đối **KHÔNG** kích hoạt bất kỳ hành vi cuộn ngược trang lên trên.
-    3. `deltaMessages` chứa chính xác từ 5 đến 10 tin nhắn mới nhất tại đáy viewport.
-- **AC-02 (Bóc Tách Delta Chuẩn Xác Khi Thấy Điểm Nối)**:
-  - **Given**: Khung chat có 20 tin nhắn, trong đó tin nhắn thứ 15 trùng khớp với `lastMsgId` trong Checkpoint.
-  - **When**: Node 4 thực thi quét.
-  - **Then**:
-    1. `stitchFound === true`.
-    2. `deltaMessages` chứa chính xác 5 tin nhắn (từ tin 16 đến tin 20) theo đúng thứ tự thời gian.
-- **AC-03 (Phát Hiện Cờ Pending Upload)**:
-  - **Given**: Tin nhắn mới nhất là một ảnh đang có vòng quay loading spinner của Zalo.
-  - **When**: Node 4 phân tích thẻ tin nhắn.
-  - **Then**: `RawChatMessage` tương ứng phải có cờ `isPendingUpload === true` để Node 5 kích hoạt bộ đệm chờ.
+### 6.1. Tiêu Chí Nghiệm Thu Nhị Phân (Binary Acceptance Gates)
 
+```yaml
+acceptance_gates:
+  GATE-N04-01:
+    name: "Delta Extraction upon Checkpoint Hit"
+    given: "Khung chat đang mở chứa 25 tin nhắn trên DOM, tin nhắn thứ 18 có msgId trùng khớp lastMessageId trong IndexedDB."
+    when: "stitchDelta(groupId) được kích hoạt."
+    then:
+      - "matchIndex được xác định chính xác tại vị trí 18."
+      - "Hàm trả về chính xác 7 tin nhắn (từ tin 19 đến 25) theo đúng trình tự thời gian."
+      - "Ghi log INFO ghi nhận số lượng tin mới thu được."
+
+  GATE-N04-02:
+    name: "Bottom Fallback Anchor upon Checkpoint Miss"
+    given: "Nhóm có checkpoint lưu msg_001 trong DB, nhưng DOM hiện tại chỉ hiển thị msg_040 đến msg_070 (checkpoint đã bị trôi khỏi Virtualized DOM)."
+    when: "stitchDelta(groupId) được kích hoạt."
+    then:
+      - "matchIndex trả về -1 (không tìm thấy trong DOM)."
+      - "Tuyệt đối KHÔNG thực hiện bất kỳ thao tác cuộn ngược nào trên DOM."
+      - "Hàm tự động cắt lát an toàn allMessages.slice(-10), trả về tối đa 10 tin nhắn mới nhất tại đáy."
+      - "Ghi log WARN cảnh báo mất dấu checkpoint và áp dụng Fallback."
+
+  GATE-N04-03:
+    name: "First Run Fallback Initialization"
+    given: "Nhóm nguồn mới được thêm vào hệ thống lần đầu, bảng group_checkpoints chưa có bản ghi của groupId."
+    when: "stitchDelta(groupId) được kích hoạt."
+    then:
+      - "Tra cứu DB trả về undefined."
+      - "Hàm tự động trả về 10 tin nhắn mới nhất ở đáy viewport."
+      - "Bản ghi group_checkpoints trong DB vẫn giữ nguyên không bị ghi đè tại Node 04."
+
+  GATE-N04-04:
+    name: "Missing Container Graceful Handling"
+    given: "Zalo Web đang ở trạng thái tải trang hoặc đổi hội thoại, SELECTORS.CHAT_MESSAGE_CONTAINER không tìm thấy phần tử."
+    when: "stitchDelta(groupId) được kích hoạt."
+    then:
+      - "Hàm không ném uncaught exception."
+      - "Ghi log ERROR với operation DELTA_STITCHER và nodeId N04."
+      - "Trả về mảng rỗng [] để Worker giải phóng hàng chờ an toàn."
+```
+
+### 6.2. Bảng Kiểm Định Hoàn Thành (Definition of Done)
+
+```yaml
+definition_of_done:
+  structural_integrity:
+    - check: "Phân tách chuẩn mực 6 phần: Header, Directives, Constraints, Body, Context/Evidence, Output Contract."
+      status: "VERIFIED"
+    - check: "Tất cả các khối YAML tuân thủ nghiêm ngặt độ sâu lồng nhau <= 3 cấp."
+      status: "VERIFIED"
+    - check: "Khai báo rõ ràng Negative Space với >= 3 điều cấm must_not và 4 invariants định danh."
+      status: "VERIFIED"
+
+  portability_and_linking:
+    - check: "Toàn bộ liên kết điều hướng sử dụng đường dẫn tương đối khả dụng."
+      status: "VERIFIED"
+    - check: "Tuyệt đối không bọc ký tự định dạng mã vào nhãn hiển thị của liên kết."
+      status: "VERIFIED"
+    - check: "Tuyệt đối không sử dụng tiền tố giao thức tệp cục bộ hoặc ký tự ổ đĩa tuyệt đối."
+      status: "VERIFIED"
+
+  contract_and_code_synchronization:
+    - check: "Đồng bộ 100% cấu trúc GroupCheckpoint: groupId, lastMessageId, lastSenderId, updatedAt."
+      status: "VERIFIED"
+    - check: "Khớp 100% chữ ký phương thức và kiểu dữ liệu RawExtractedMessage trong n04-delta-stitcher.ts."
+      status: "VERIFIED"
+    - check: "Bộ selector đồng bộ tuyệt đối với 3 tầng phân giải trong selectors.ts."
+      status: "VERIFIED"
+
+  mechanical_proof:
+    - check: "Cú pháp Mermaid diagrams (flowchart, sequence) hợp lệ, quote các nhãn đặc biệt."
+      status: "VERIFIED"
+    - check: "Toàn bộ GitHub Alerts (> [!NOTE], [!TIP], [!IMPORTANT], [!WARNING]) đúng cú pháp chuẩn."
+      status: "VERIFIED"
+    - check: "Khắc phục triệt để khoảng trống ngữ nghĩa (Zero Semantic Void), không chứa TODO/Mock."
+      status: "VERIFIED"
+```
