@@ -40,7 +40,7 @@ guidance_rules:
 
 **Purpose**: Chuẩn hóa interface contracts, ma trận selector DOM 3 tầng và schemas Zod làm nền tảng bất biến cho toàn bộ Node 01.
 
-- [ ] T001 [P] Chuẩn hóa ma trận selector DOM 3 tầng bám sát snapshot `Temps/zalo-element/sidebar.html` trong `src/contracts/selectors.ts` kèm unit tests trong `tests/unit/selectors.test.ts`
+- [x] T001 [P] Chuẩn hóa ma trận selector DOM 3 tầng bám sát snapshot `Temps/zalo-element/sidebar.html` trong `src/contracts/selectors.ts` kèm unit tests trong `tests/unit/selectors.test.ts`
 - [x] T002 [P] Khai báo bổ sung các Zod schemas (`WhitelistGroupItem`, `DiscoveredGroupItem`, `GroupDetectedEvent`, `N01Config`) trong `src/contracts/schemas.ts` kèm unit tests trong `tests/unit/schemas.test.ts`
 
 ---
