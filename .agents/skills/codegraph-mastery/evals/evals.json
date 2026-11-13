@@ -1,0 +1,114 @@
+{
+  "skill_name": "codegraph-mastery",
+  "evals": [
+    {
+      "id": 1,
+      "name": "flow-stale-f5-recovery",
+      "prompt": "Khảo sát chi tiết luồng phục hồi tác vụ hàng đợi bị gián đoạn khi người dùng F5 hoặc reload trang Zalo Web. Chỉ ra chính xác chuỗi gọi hàm từ Orchestrator qua QueueManager và tương tác với Dexie database.",
+      "expected_output": "Chỉ ra chính xác chuỗi gọi: ZaloAutomationOrchestrator.start() -> queueManager.initialize() -> queueRepo.resetStaleProcessing() trên Dexie DB mà không dùng grep/read vòng lặp.",
+      "files": [],
+      "assertions": [
+        "Sử dụng codegraph_explore với query chứa bag-of-symbols phù hợp (ví dụ: ZaloAutomationOrchestrator start queueManager initialize queueRepo)",
+        "Không gọi grep_search hoặc file_search vòng lặp",
+        "Không gọi read_file lặp lại để đọc lại các file đã được codegraph_explore hiển thị",
+        "Xác định đúng file src/orchestrator.ts, src/nodes/n02-queue-manager.ts và src/db/queue-repo.ts"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "flow-zalo-forward-phase1",
+      "prompt": "Khảo sát quy trình tự động hóa chuyển tiếp tin nhắn ở Pha 1: Từ lúc click nút forward trên tin nhắn nguồn cho đến khi xác nhận toast thành công trên DOM Zalo.",
+      "expected_output": "Trích xuất và giải thích chính xác logic forwardPhase1 trong ForwardAutomator, tương tác selector DOM và toast feedback.",
+      "files": [],
+      "assertions": [
+        "Sử dụng codegraph_explore với query liên quan đến ForwardAutomator forwardPhase1 SELECTORS",
+        "Không đọc dư thừa toàn bộ các file selector hay helper khác",
+        "Chỉ rõ đúng vị trí file src/nodes/n08-forward-automator.ts"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "symbol-disambiguation-clampposition",
+      "prompt": "Hàm giới hạn toạ độ clampPosition hoạt động như thế nào và các hằng số padding viewport được định nghĩa ở đâu?",
+      "expected_output": "Chỉ rõ hàm clampPosition và VIEWPORT_PADDING nằm tại entrypoints/zalo.content/panel-storage.ts kèm công thức giới hạn toạ độ.",
+      "files": [],
+      "assertions": [
+        "Sử dụng codegraph_explore kèm ngữ cảnh tên file hoặc hằng số VIEWPORT_PADDING",
+        "Không query từ khóa đơn lẻ clampPosition gây loãng kết quả",
+        "Trích dẫn đúng file entrypoints/zalo.content/panel-storage.ts"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "blast-radius-storage-adapter",
+      "prompt": "Tôi muốn bổ sung phương thức clearCache() vào interface IFeatureStorageAdapter. Hãy phân tích bán kính ảnh hưởng (blast radius) xem những adapter và module nào sẽ bị tác động trực tiếp và cần cập nhật.",
+      "expected_output": "Trích xuất chính xác 10 callers từ khối blast radius của IFeatureStorageAdapter, nhận diện các adapter liên quan và file test tests/unit/feature-storage.test.ts.",
+      "files": [],
+      "assertions": [
+        "Sử dụng codegraph_explore để lấy blast radius của IFeatureStorageAdapter",
+        "Không dùng grep_search để quét thủ công caller",
+        "Nêu rõ các lớp kế thừa như ChromeLocalStorageAdapter và file test bao phủ tests/unit/feature-storage.test.ts"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "defensive-gate-missing-tests",
+      "prompt": "Hãy tái cấu trúc hàm attachObserver trong n01-sidebar-observer.ts để tăng timeout từ 30s lên 60s và xử lý thêm MutationObserver reconnect.",
+      "expected_output": "Phát hiện cảnh báo 'no covering tests found' của CodeGraph và kích hoạt tư duy phòng thủ: cảnh báo hoặc đề xuất bổ sung unit test trước khi mutation.",
+      "files": [],
+      "assertions": [
+        "Khám phá symbol attachObserver trong n01-sidebar-observer.ts qua codegraph_explore",
+        "Nhận diện được trạng thái 'no covering tests found'",
+        "Dừng lại hoặc cảnh báo rủi ro thiếu test bao phủ thay vì mù quáng sửa code trực tiếp"
+      ]
+    },
+    {
+      "id": 6,
+      "name": "companion-test-enforcement-hasher",
+      "prompt": "Tối ưu hóa hàm isHashMatch trong src/utils/cryptoHasher.ts để so sánh trực tiếp không cần trim(). Hãy chỉ ra file test tương ứng cần chạy để nghiệm thu.",
+      "expected_output": "Xác định chính xác file test tests/unit/crypto-hasher.test.ts từ trường tests của blast radius trong codegraph_explore.",
+      "files": [],
+      "assertions": [
+        "Sử dụng codegraph_explore để định vị isHashMatch và file test bao phủ",
+        "Chỉ ra chính xác file test tests/unit/crypto-hasher.test.ts",
+        "Yêu cầu chạy test runner để kiểm chứng trước khi xác nhận hoàn tất"
+      ]
+    },
+    {
+      "id": 7,
+      "name": "staleness-banner-handling",
+      "prompt": "Một tệp panel-storage.ts vừa được chỉnh sửa cách đây 1 giây. Nếu khi gọi codegraph_explore mà gặp cảnh báo Staleness Banner, bạn xử lý như thế nào để đảm bảo dữ liệu không bị lỗi thời?",
+      "expected_output": "Hiểu rõ cơ chế Staleness Banner của CodeGraph và fallback đọc trực tiếp tệp vừa sửa thay vì tin vào AST cache chưa kịp đồng bộ.",
+      "files": [],
+      "assertions": [
+        "Giải thích đúng nguyên nhân do debounce window 2000ms của File Watcher",
+        "Nêu rõ hành động: đọc trực tiếp file bị gắn cờ staleness bằng read_file",
+        "Không cố chấp tin vào kết quả explore đang bị stale"
+      ]
+    },
+    {
+      "id": 8,
+      "name": "cross-boundary-wxt-pipeline",
+      "prompt": "Tìm điểm kết nối nơi Zalo Content Script khởi tạo và kích hoạt ZaloAutomationOrchestrator trong kiến trúc WXT.",
+      "expected_output": "Chỉ ra chính xác vị trí khởi tạo Orchestrator tại entrypoints/zalo.content/index.tsx kết nối với ZaloAutomationOrchestrator trong src/orchestrator.ts.",
+      "files": [],
+      "assertions": [
+        "Sử dụng query liên kết entrypoints/zalo.content và orchestrator",
+        "Xác định đúng file entrypoints/zalo.content/index.tsx và src/orchestrator.ts trong 1 lần explore duy nhất",
+        "Không dùng vòng lặp grep qua các thư mục"
+      ]
+    },
+    {
+      "id": 9,
+      "name": "verbatim-direct-edit-discipline",
+      "prompt": "Hãy thay đổi cấu hình mặc định mutexTimeoutSec từ 60 lên 90 trong giao diện quản lý N02QueueManagerView.",
+      "expected_output": "Sử dụng mã nguồn có sẵn số dòng từ codegraph_explore để trực tiếp thay đổi mã nguồn mà không gọi thêm read_file.",
+      "files": [],
+      "assertions": [
+        "Gọi codegraph_explore với symbol N02QueueManagerView DEFAULT_N02_CONFIG",
+        "Tận dụng trực tiếp verbatim source code trả về từ explore",
+        "Không thực hiện thêm lệnh read_file trên tệp src/screens/features/nodes/N02QueueManagerView.tsx"
+      ]
+    }
+  ]
+}
