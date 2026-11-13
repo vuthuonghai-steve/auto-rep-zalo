@@ -97,12 +97,12 @@ exit_condition: "User Story 1 hoàn thành độc lập, vượt qua toàn bộ 
 
 ### Tests for User Story 2
 
-- [ ] T010 [P] [US2] Xây dựng bộ test kiểm chứng cơ chế Debounce 300ms và Idempotent Enqueueing (GATE-N01-01, GATE-N01-03) trong `tests/unit/n01-sidebar-observer-debounce.test.ts`
+- [x] T010 [P] [US2] Xây dựng bộ test kiểm chứng cơ chế Debounce 300ms và Idempotent Enqueueing (GATE-N01-01, GATE-N01-03) trong `tests/unit/n01-sidebar-observer-debounce.test.ts`
 
 ### Implementation for User Story 2
 
-- [ ] T011 [US2] Hiện thực cơ chế Debounce Buffer gom cụm đột biến DOM 300ms kết hợp `requestAnimationFrame` microtask chunking trong `src/nodes/n01-sidebar-observer.ts`
-- [ ] T012 [US2] Hiện thực cơ chế Khử trùng lặp lũy đẳng (Idempotent Enqueueing) ghi nhận vào Dexie bảng `group_dispatch_queue` (chỉ cập nhật `lastActiveAt` nếu đang `PENDING` hoặc `PROCESSING`) trong `src/nodes/n01-sidebar-observer.ts`
+- [x] T011 [US2] Hiện thực cơ chế Debounce Buffer gom cụm đột biến DOM 300ms kết hợp `requestAnimationFrame` microtask chunking trong `src/nodes/n01-sidebar-observer.ts`
+- [x] T012 [US2] Hiện thực cơ chế Khử trùng lặp lũy đẳng (Idempotent Enqueueing) ghi nhận vào Dexie bảng `group_dispatch_queue` (chỉ cập nhật `lastActiveAt` nếu đang `PENDING` hoặc `PROCESSING`) trong `src/nodes/n01-sidebar-observer.ts`
 
 <checkpoint>
 phase: "Phase 4: User Story 2"

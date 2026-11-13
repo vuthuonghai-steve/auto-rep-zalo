@@ -273,8 +273,8 @@ describe('Node 01: Sidebar Observer DOM Extraction & Multi-Signal Fusion (tests/
       badge.innerHTML = '<i class="fa fa-3_24_Line"></i>';
       unreadContainer?.appendChild(badge);
 
-      // Allow MutationObserver microtask to fire
-      await new Promise((resolve) => setTimeout(resolve, 30));
+      // Allow MutationObserver and Debounce window (300ms) to fire
+      await new Promise((resolve) => setTimeout(resolve, 350));
 
       expect(onNewMsg).toHaveBeenCalledTimes(1);
       expect(events).toHaveLength(1);
