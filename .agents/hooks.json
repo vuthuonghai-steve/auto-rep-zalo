@@ -29,6 +29,21 @@
       }
     ]
   },
+  "andrew-directory-structure-guard": {
+    "enabled": true,
+    "PostToolUse": [
+      {
+        "matcher": "write_file|edit_file",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -ExecutionPolicy Bypass -File scripts/guards/directory-structure-guard.ps1",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  },
   "andrew-verification-gate": {
     "enabled": true,
     "Stop": [
