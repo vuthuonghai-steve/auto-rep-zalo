@@ -166,9 +166,9 @@ exit_condition: "Toàn bộ 4 User Stories hoàn tất độc lập và liên k�
 
 **Purpose**: Rà soát tích hợp hệ thống, dọn dẹp mã nguồn và kiểm chứng cơ học toàn diện.
 
-- [ ] T022 [P] Cập nhật kết nối và truyền `GroupDetectedEvent` từ `src/nodes/n01-sidebar-observer.ts` sang `src/orchestrator.ts`
-- [ ] T023 [P] Chạy toàn diện bộ kiểm thử đơn vị `vitest run tests/unit/n01-*` và xác nhận 100% tests pass (exit code 0)
-- [ ] T024 [P] Chạy kiểm tra định dạng và phân tích tĩnh Biome bằng lệnh `biome check .` bảo đảm 0 lỗi cú pháp
+- [x] T022 [P] Cập nhật kết nối và truyền `GroupDetectedEvent` từ `src/nodes/n01-sidebar-observer.ts` sang `src/orchestrator.ts`
+- [x] T023 [P] Chạy toàn diện bộ kiểm thử đơn vị `vitest run tests/unit/n01-*` và xác nhận 100% tests pass (exit code 0)
+- [x] T024 [P] Chạy kiểm tra định dạng và phân tích tĩnh Biome bằng lệnh `biome check .` bảo đảm 0 lỗi cú pháp
 
 ---
 

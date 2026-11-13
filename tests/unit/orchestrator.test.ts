@@ -4,7 +4,7 @@ import { db } from '@/db/database';
 import { queueManager } from '@/nodes/n02-queue-manager';
 import { ZaloAutomationOrchestrator } from '@/orchestrator';
 import { circuitBreaker } from '@/utils/pacing-guard';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 describe('Phase 7: Full Orchestrator & Cross-Cutting Polish (Unit Tests)', () => {
   const fixturePath = path.resolve(__dirname, '../fixtures/mock-zalo.html');
@@ -101,5 +101,52 @@ describe('Phase 7: Full Orchestrator & Cross-Cutting Polish (Unit Tests)', () =>
       (l) => l.operation === 'TWO_PHASE_FORWARD' || l.operation === 'FORWARD_PHASE1',
     );
     expect(forwardLogs.length).toBeGreaterThan(0);
+  });
+
+  it('should initialize SidebarObserver with n01_whitelist_groups and forward GroupDetectedEvent to queueManager', async () => {
+    // Thiết lập cấu hình n01_whitelist_groups ưu tiên
+    await db.app_settings.put({
+      key: 'n01_whitelist_groups',
+      value: {
+        groups: [
+          {
+            groupId: 'g1206626154231863388',
+            groupName: '🏆TL21House🏆- NGUỒN <4tr',
+            matchingRule: 'EXACT',
+            priority: 1,
+            isEnabled: true,
+            addedAt: Date.now(),
+            lastUpdatedAt: Date.now(),
+          },
+        ],
+      },
+      updatedAt: Date.now(),
+    });
+
+    const orch = new ZaloAutomationOrchestrator({ quiescenceDelayMs: 0 });
+    await orch.start();
+
+    // Giả lập observer phát hiện tin nhắn mới với GroupDetectedEvent
+    const observer = (orch as unknown as { observer?: { onNewMessage: (gid: string, evt?: unknown) => void } }).observer;
+    expect(observer).toBeDefined();
+
+    const enqueueSpy = vi.spyOn(queueManager, 'enqueue');
+
+    const testEvent = {
+      groupId: 'g1206626154231863388',
+      groupName: '🏆TL21House🏆- NGUỒN <4tr',
+      unreadCount: 5,
+      lastSnippet: 'Tin nhắn mới',
+      detectedAt: Date.now(),
+      correlationId: 'corr_test_n01_event_123',
+      isCommunity: true,
+    };
+
+    observer?.onNewMessage('g1206626154231863388', testEvent);
+
+    expect(enqueueSpy).toHaveBeenCalledWith('g1206626154231863388', 'corr_test_n01_event_123');
+
+    enqueueSpy.mockRestore();
+    orch.stop();
   });
 });
