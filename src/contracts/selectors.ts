@@ -5,27 +5,86 @@ export interface SelectorDefinition {
   tier3_class: string; // CSS class / ID fallback
 }
 
+export const UNREAD_BADGE_ICON_CLASSES = [
+  'fa-1_24_Line',
+  'fa-2_24_Line',
+  'fa-3_24_Line',
+  'fa-4_24_Line',
+  'fa-5_Plus_24_Line',
+  '--dot',
+] as const;
+
+export type UnreadBadgeIconClass = (typeof UNREAD_BADGE_ICON_CLASSES)[number];
+
 export const SELECTORS = {
   SIDEBAR_CONVERSATIONS: {
     name: 'SIDEBAR_CONVERSATIONS',
     tier1_semantic:
-      '[data-id="div_TabMsg_ThrdChList"], [data-id="conversation-list"], #conversationListId, #conversationList[role="grid"]',
+      '#conversationListId[data-id="div_TabMsg_ThrdChList"], #conversationList[role="grid"], [data-id="div_TabMsg_ThrdChList"], [data-id="conversation-list"]',
     tier2_hierarchy:
-      'nav div[tabindex="0"], #conversationListId #conversationList, div.virtualized-scroll #conversationList',
+      '#conversationListId #conversationList, div.virtualized-scroll #conversationList, nav div[tabindex="0"]',
     tier3_class: '#conversationList, #conversationListId, .virtualized-scroll',
   },
   SIDEBAR_ITEM: {
     name: 'SIDEBAR_ITEM',
-    tier1_semantic: '[data-id="div_TabMsg_ThrdChItem"], [anim-data-id^="g"], [data-id^="conv-"]',
+    tier1_semantic:
+      'div.msg-item[data-id="div_TabMsg_ThrdChItem"][anim-data-id^="g"], div.msg-item[data-id="div_TabMsg_ThrdChItem"], [data-id="div_TabMsg_ThrdChItem"], [anim-data-id^="g"], [data-id^="conv-"]',
     tier2_hierarchy: '#conversationList .msg-item, #conversationList .conv-item, nav .conv-item',
     tier3_class: '.conv-item, .msg-item',
   },
+  SIDEBAR_ITEM_AVATAR: {
+    name: 'SIDEBAR_ITEM_AVATAR',
+    tier1_semantic: 'img[data-ava-uid^="g"]',
+    tier2_hierarchy:
+      '.conv-item__avatar img, .conversationList__avatar img, .conv-item .conv-avatar img, .conv-item .conv-avatar',
+    tier3_class: '.conversationList__avatar img, .conv-avatar, .grd-ava img',
+  },
+  SIDEBAR_ITEM_TITLE: {
+    name: 'SIDEBAR_ITEM_TITLE',
+    tier1_semantic:
+      'div-b16.conv-item-title__name.truncate.grid-item > div.truncate, div-b16.conv-item-title__name .truncate, .conv-name',
+    tier2_hierarchy:
+      '.conv-item-title__name > div.truncate, .conv-item-title__name .truncate, .conv-info .conv-name',
+    tier3_class: '.conv-item-title__name, .conv-name',
+  },
+  SIDEBAR_COMMUNITY_ICON: {
+    name: 'SIDEBAR_COMMUNITY_ICON',
+    tier1_semantic:
+      'i.fa-Community_16_Filled.community__conv-indicator, i.community__conv-indicator',
+    tier2_hierarchy:
+      '.conv-item-title__name i.community__conv-indicator, .conv-item i[class*="Community"]',
+    tier3_class: '.community__conv-indicator, .fa-Community_16_Filled',
+  },
+  UNREAD_BADGE_CONTAINER: {
+    name: 'UNREAD_BADGE_CONTAINER',
+    tier1_semantic:
+      'div.conv-item-body__action > div.conv-action__unread-v2, div.conv-item-body__action .conv-action__unread-v2',
+    tier2_hierarchy:
+      '.conv-item .conv-item-body__action, .conv-item .conv-action__unread-v2, .conv-item .unread-badge, .conv-item .unread-red-dot',
+    tier3_class: '.conv-action__unread-v2, .conv-item-body__action, .unread-badge, .unread-red-dot',
+  },
   UNREAD_BADGE: {
     name: 'UNREAD_BADGE',
-    tier1_semantic: '.z-conv-message.--unread, [data-translate-inner*="unread"]',
+    tier1_semantic:
+      '.conv-action__unread-v2 .z-noti-badge, .z-noti-badge, [data-translate-inner*="unread"]',
     tier2_hierarchy:
       '.conv-action__unread-v2 .z-noti-badge, .conv-item .unread-badge, .conv-item .unread-red-dot',
     tier3_class: '.z-noti-badge, .unread-badge, .unread-red-dot',
+  },
+  PREVIEW_MESSAGE: {
+    name: 'PREVIEW_MESSAGE',
+    tier1_semantic:
+      '.z-conv-message__preview-message .inline, .z-conv-message .inline, .conv-last-msg',
+    tier2_hierarchy:
+      '.conv-item-body .z-conv-message__preview-message, .conv-item-body .z-conv-message, .conv-info .conv-last-msg',
+    tier3_class: '.z-conv-message__preview-message, .conv-last-msg',
+  },
+  PREVIEW_SENDER: {
+    name: 'PREVIEW_SENDER',
+    tier1_semantic: '.z-conv-message__preview-sender-name',
+    tier2_hierarchy:
+      '.z-conv-message .z-conv-message__preview-sender-name, .conv-item-body .z-conv-message__preview-sender-name, .msg-sender',
+    tier3_class: '.z-conv-message__preview-sender-name, .msg-sender',
   },
   CHAT_MESSAGE_CONTAINER: {
     name: 'CHAT_MESSAGE_CONTAINER',
@@ -236,3 +295,46 @@ export const SelectorHealthChecker = {
     );
   },
 };
+
+/**
+ * Trích xuất số lượng tin nhắn chưa đọc từ element huy hiệu (badge),
+ * hỗ trợ giải mã Font Icon Zalo (fa-1_24_Line -> fa-5_Plus_24_Line) và class --dot.
+ */
+export function extractUnreadBadgeCount(badgeElement: Element | null): {
+  unreadCount: number;
+  isDot: boolean;
+} {
+  if (!badgeElement) return { unreadCount: 0, isDot: false };
+
+  // Trường hợp 1: Chấm đỏ không có số (Dot badge cho nhóm tắt chuông)
+  if (
+    badgeElement.classList.contains('--dot') ||
+    badgeElement.classList.contains('unread-red-dot')
+  ) {
+    return { unreadCount: 1, isDot: true };
+  }
+
+  // Trường hợp 2: Huy hiệu đếm số (--counter hoặc fallback class / text)
+  if (
+    badgeElement.classList.contains('--counter') ||
+    badgeElement.classList.contains('unread-badge') ||
+    badgeElement.classList.contains('z-noti-badge')
+  ) {
+    const iconChild = badgeElement.querySelector('i[class*="fa-"]');
+    if (iconChild) {
+      const classList = iconChild.className;
+      if (classList.includes('fa-5_Plus_24_Line')) return { unreadCount: 5, isDot: false };
+      if (classList.includes('fa-4_24_Line')) return { unreadCount: 4, isDot: false };
+      if (classList.includes('fa-3_24_Line')) return { unreadCount: 3, isDot: false };
+      if (classList.includes('fa-2_24_Line')) return { unreadCount: 2, isDot: false };
+      if (classList.includes('fa-1_24_Line')) return { unreadCount: 1, isDot: false };
+    }
+    // Fallback: nếu Zalo cập nhật render số trực tiếp dạng text
+    const textVal = Number.parseInt(badgeElement.textContent?.trim() || '0', 10);
+    if (!Number.isNaN(textVal) && textVal > 0) return { unreadCount: textVal, isDot: false };
+
+    return { unreadCount: 1, isDot: false };
+  }
+
+  return { unreadCount: 0, isDot: false };
+}
