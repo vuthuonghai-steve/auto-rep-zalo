@@ -57,7 +57,7 @@ rule: "No user story work may begin until Phase 2 completes and tests pass"
 
 - [ ] T003 [P] Thiết lập DOM snapshot fixture từ `Temps/zalo-element/sidebar.html` phục vụ mock testing trong `tests/fixtures/sidebar-dom.fixture.ts`
 - [x] T004 [P] Xây dựng hàm tiện ích thuần túy chuẩn hóa chuỗi `normalizeZaloText` (Unicode NFC, loại bỏ `&nbsp;`, zero-width space, gom khoảng trắng) trong `src/utils/text-normalizer.ts` kèm companion tests trong `tests/unit/text-normalizer.test.ts`
-- [ ] T005 [P] Xây dựng hàm tiện ích trích xuất số lượng từ Font Icon Zalo `extractUnreadBadgeCount` (`fa-1_24_Line` đến `fa-5_Plus_24_Line` và `--dot`) trong `src/utils/badge-extractor.ts` kèm companion tests trong `tests/unit/badge-extractor.test.ts`
+- [x] T005 [P] Xây dựng hàm tiện ích trích xuất số lượng từ Font Icon Zalo `extractUnreadBadgeCount` (`fa-1_24_Line` đến `fa-5_Plus_24_Line` và `--dot`) trong `src/utils/badge-extractor.ts` kèm companion tests trong `tests/unit/badge-extractor.test.ts`
 
 <checkpoint>
 phase: "Phase 2: Foundational"
