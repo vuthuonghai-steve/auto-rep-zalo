@@ -1,3 +1,4 @@
+import { sendMessage } from '@/contracts/messaging';
 import { logger } from '@/utils/logger';
 import { circuitBreaker } from '@/utils/pacing-guard';
 import { signal } from '@preact/signals';
@@ -135,17 +136,13 @@ export function FloatingPanel() {
     logger.info('CIRCUIT_BREAKER', 'N00', 'Operator resumed automation from Floating Panel');
   };
 
-  const handleOpenOptions = () => {
+  const handleOpenSidePanel = () => {
     try {
-      if (typeof chrome !== 'undefined' && chrome.runtime) {
-        if (chrome.tabs?.create) {
-          chrome.tabs.create({ url: chrome.runtime.getURL('options.html') });
-        } else if (chrome.runtime.openOptionsPage) {
-          chrome.runtime.openOptionsPage();
-        }
-      }
-    } catch {
-      // Bỏ qua lỗi trong môi trường test
+      sendMessage('openSidePanel', undefined).catch((err) => {
+        logger.warn('FLOATING_PANEL', 'N00', `Không thể mở Side Panel qua IPC: ${String(err)}`);
+      });
+    } catch (err) {
+      logger.warn('FLOATING_PANEL', 'N00', `Lỗi khi gửi yêu cầu mở Side Panel: ${String(err)}`);
     }
   };
 
@@ -310,9 +307,9 @@ export function FloatingPanel() {
           <button
             type="button"
             id="btn-open-options"
-            onClick={handleOpenOptions}
+            onClick={handleOpenSidePanel}
             class="px-2.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg"
-            title="Mở cấu hình Whitelist & Giá"
+            title="Mở Side Panel Điều Khiển"
           >
             {'\u2699'}
           </button>

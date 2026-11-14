@@ -1,4 +1,4 @@
-import { isFeatureEnabled } from '@/configs/storage.config';
+import { initFeatureFlags, isFeatureEnabled } from '@/configs/storage.config';
 import type {
   EntityBundle,
   GroupDetectedEvent,
@@ -36,6 +36,11 @@ export class ZaloAutomationOrchestrator {
 
     logger.info('ORCHESTRATOR', 'GLOBAL', 'Khởi động hệ thống Zalo Automation 24/7');
     this.running = true;
+
+    // 0. Đồng bộ cờ tính năng từ Storage nếu chạy trong extension runtime
+    if (typeof chrome !== 'undefined' && chrome.storage?.local) {
+      await initFeatureFlags();
+    }
 
     // 1. Phục hồi các tác vụ Stale sau F5/Reload
     await queueManager.initialize();
@@ -114,6 +119,67 @@ export class ZaloAutomationOrchestrator {
 
   isStarted(): boolean {
     return this.running;
+  }
+
+  /**
+   * Đồng bộ động trạng thái các Node khi Feature Flags thay đổi thời gian thực
+   */
+  async syncFeatures(): Promise<void> {
+    if (!this.running) {
+      return;
+    }
+
+    if (isFeatureEnabled('n01-sidebar-observer')) {
+      if (!this.observer) {
+        let whitelist: (string | WhitelistGroupItem)[] = [];
+        const n01Setting = await db.app_settings.get('n01_whitelist_groups');
+        if (n01Setting?.value) {
+          const val = n01Setting.value as { groups?: WhitelistGroupItem[] } | WhitelistGroupItem[];
+          if (Array.isArray((val as { groups?: WhitelistGroupItem[] }).groups)) {
+            whitelist = (val as { groups: WhitelistGroupItem[] }).groups;
+          } else if (Array.isArray(val)) {
+            whitelist = val;
+          }
+        }
+
+        if (whitelist.length === 0) {
+          const settingRecord = await db.app_settings.get('config');
+          const configValue = settingRecord?.value as { whitelist_groups?: string[] } | undefined;
+          whitelist = configValue?.whitelist_groups || [];
+        }
+
+        this.observer = new SidebarObserver({
+          whitelist,
+          onNewMessage: (groupId: string, event?: GroupDetectedEvent) => {
+            logger.info(
+              'ORCHESTRATOR',
+              'N01',
+              `Phát hiện tin mới tại nhóm: ${groupId} (Tên: ${event?.groupName ?? 'N/A'}, Unread: ${event?.unreadCount ?? 0}, Corr: ${event?.correlationId ?? 'N/A'})`,
+              {
+                groupId,
+              },
+            );
+            queueManager.enqueue(groupId, event?.correlationId).catch(() => {});
+          },
+        });
+        this.observer.start();
+        logger.info(
+          'ORCHESTRATOR',
+          'N01',
+          'Đã kích hoạt N01 Sidebar Observer sau khi cờ tính năng được bật',
+        );
+      }
+    } else {
+      if (this.observer) {
+        this.observer.stop();
+        this.observer = null;
+        logger.info(
+          'ORCHESTRATOR',
+          'N01',
+          'Đã dừng N01 Sidebar Observer do cờ tính năng bị tắt',
+        );
+      }
+    }
   }
 
   /**

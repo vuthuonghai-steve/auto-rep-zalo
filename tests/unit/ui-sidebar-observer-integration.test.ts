@@ -184,4 +184,29 @@ describe('UI Sidebar Observer Integration & Whitelist SSOT (tests/unit/ui-sideba
       expect(ctaBtn.textContent).toContain('Quét Nhóm Tự Động Từ Sidebar');
     });
   });
+
+  describe('Test Case 6: SidebarObserverScreen Mount/Unmount Telemetry & Whitelist Lifecycle', () => {
+    it('should initialize telemetry listener and load whitelist on mount, and dispose on unmount', async () => {
+      const initSpy = vi.spyOn(sidebarObserverSignals, 'initTelemetryListener');
+      const loadSpy = vi.spyOn(sidebarObserverSignals, 'loadWhitelistFromDB').mockResolvedValue([]);
+      const disposeSpy = vi.spyOn(sidebarObserverSignals, 'disposeTelemetryListener');
+
+      render(
+        h(SidebarObserverScreen, { title: 'Node 01: Sidebar Observer & Khám Phá Nhóm' }),
+        container,
+      );
+
+      // Chờ Preact flush useEffect lifecycle
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      expect(initSpy).toHaveBeenCalledTimes(1);
+      expect(loadSpy).toHaveBeenCalledTimes(1);
+
+      // Unmount component
+      render(null, container);
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      expect(disposeSpy).toHaveBeenCalledTimes(1);
+    });
+  });
 });

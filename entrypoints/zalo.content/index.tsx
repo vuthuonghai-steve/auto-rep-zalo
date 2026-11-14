@@ -1,3 +1,6 @@
+import { initFeatureFlags } from '@/configs/storage.config';
+import { onMessage } from '@/contracts/messaging';
+import { discoverSidebarGroups, loadWhitelistSettings } from '@/nodes/n01-sidebar-observer';
 import { orchestrator } from '@/orchestrator';
 import { render } from 'preact';
 import { createShadowRootUi } from 'wxt/client';
@@ -60,6 +63,51 @@ export default defineContentScript({
     orchestrator.start().catch((err) => {
       console.error('[ZaloAutomation] Orchestrator start failed:', err);
     });
+
+    // 3.1. Lắng nghe thay đổi Feature Flags từ Side Panel/Options theo thời gian thực
+    try {
+      if (typeof chrome !== 'undefined' && chrome.storage?.onChanged) {
+        const handleStorageChange = (
+          changes: { [key: string]: chrome.storage.StorageChange },
+          areaName: string,
+        ) => {
+          if (areaName === 'local' && (changes.feature_flags_state_v2 || changes.feature_flags_state)) {
+            initFeatureFlags()
+              .then(() => orchestrator.syncFeatures())
+              .catch((err) => {
+                console.error('[ZaloAutomation] Sync features on flag change failed:', err);
+              });
+          }
+        };
+
+        chrome.storage.onChanged.addListener(handleStorageChange);
+        ctx.onInvalidated(() => {
+          chrome.storage.onChanged.removeListener(handleStorageChange);
+        });
+      }
+    } catch {
+      // Môi trường test không có chrome.storage
+    }
+
+    // 4. Lắng nghe yêu cầu quét danh sách nhóm từ Background / Side Panel
+    try {
+      const removeScanListener = onMessage('scanSidebarGroups', async () => {
+        try {
+          const whitelist = await loadWhitelistSettings();
+          const results = discoverSidebarGroups(document, whitelist);
+          return { groups: results };
+        } catch (err) {
+          console.error('[ZaloAutomation] scanSidebarGroups failed:', err);
+          return { groups: [] };
+        }
+      });
+
+      ctx.onInvalidated(() => {
+        removeScanListener();
+      });
+    } catch (err) {
+      console.error('[ZaloAutomation] Failed to register scanSidebarGroups listener:', err);
+    }
 
     ctx.onInvalidated(() => {
       orchestrator.stop();

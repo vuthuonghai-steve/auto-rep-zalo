@@ -109,4 +109,28 @@ describe('Messaging IPC Protocol Map (Integration Tests)', () => {
     unregQueue();
     unregLogs();
   });
+
+  it('should handle scanSidebarGroups IPC messages and return discovered groups', async () => {
+    const mockGroups = [
+      {
+        groupId: 'g_test_123',
+        groupName: 'Nhóm Mua Bán Test',
+        isCommunity: true,
+        unreadCount: 2,
+        isInWhitelist: false,
+      },
+    ];
+
+    const unregScan = onMessage('scanSidebarGroups', () => {
+      return { groups: mockGroups };
+    });
+
+    const response = await sendMessage('scanSidebarGroups', undefined);
+    expect(response).toBeDefined();
+    expect(response.groups).toHaveLength(1);
+    expect(response.groups[0]?.groupId).toBe('g_test_123');
+    expect(response.groups[0]?.groupName).toBe('Nhóm Mua Bán Test');
+
+    unregScan();
+  });
 });

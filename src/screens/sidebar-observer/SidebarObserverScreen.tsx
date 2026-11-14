@@ -60,6 +60,15 @@ export const SidebarObserverScreen: FunctionalComponent<SidebarObserverScreenPro
         setConfig({ ...DEFAULT_N01_CONFIG, ...(item.value as Partial<N01Config>) });
       }
     });
+
+    sidebarObserverSignals.initTelemetryListener();
+    sidebarObserverSignals.loadWhitelistFromDB().then(() => {
+      sidebarObserverSignals.scanGroups().catch(() => {});
+    });
+
+    return () => {
+      sidebarObserverSignals.disposeTelemetryListener();
+    };
   }, []);
 
   const handleScan = () => {

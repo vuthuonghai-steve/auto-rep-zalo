@@ -11,7 +11,7 @@ export default defineConfig({
     name: 'Zalo Personal Automation 24/7',
     description: 'Hệ thống tự động hóa thu thập, biên tập và phân phối tin nhắn Zalo cá nhân 24/7',
     version: packageJson.version,
-    permissions: ['storage', 'unlimitedStorage', 'power'],
+    permissions: ['storage', 'unlimitedStorage', 'power', 'tabs'],
     action: {},
     options_ui: {
       page: 'options.html',
