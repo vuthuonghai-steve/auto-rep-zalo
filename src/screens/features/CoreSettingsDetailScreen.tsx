@@ -1,15 +1,14 @@
-import type { PriceRouteRule, SystemLog } from '@/contracts/schemas';
+import { useRouter } from '@/configs/router.config';
+import type { PriceRouteRule, SystemLog, WhitelistGroupItem } from '@/contracts/schemas';
 import { db } from '@/db/database';
 import { logRepo } from '@/db/log-repo';
+import { loadWhitelistSettings, syncWhitelistSettings } from '@/nodes/n01-sidebar-observer';
 import { useEffect, useState } from 'preact/hooks';
 
-export interface WhitelistItem {
-  groupId: string;
-  name: string;
-}
+export type WhitelistItem = WhitelistGroupItem;
 
 export interface AppConfig {
-  whitelist: WhitelistItem[];
+  whitelist?: WhitelistGroupItem[];
   priceRules: PriceRouteRule[];
   quiescenceDelaySec: number;
 }
@@ -46,10 +45,8 @@ const DEFAULT_PRICE_RULES: PriceRouteRule[] = [
 ];
 
 export function CoreSettingsDetailScreen() {
-  const [whitelist, setWhitelist] = useState<WhitelistItem[]>([
-    { groupId: 'conv-group-source-1', name: 'Nguồn BĐS Cầu Giấy' },
-    { groupId: 'conv-group-source-2', name: 'Nguồn BĐS Đống Đa' },
-  ]);
+  const router = useRouter();
+  const [whitelist, setWhitelist] = useState<WhitelistGroupItem[]>([]);
   const [priceRules, setPriceRules] = useState<PriceRouteRule[]>(DEFAULT_PRICE_RULES);
   const [newGroupName, setNewGroupName] = useState('');
   const [newGroupId, setNewGroupId] = useState('');
@@ -57,11 +54,13 @@ export function CoreSettingsDetailScreen() {
   const [recentLogs, setRecentLogs] = useState<SystemLog[]>([]);
 
   useEffect(() => {
+    // Tải cấu hình Whitelist từ SSOT
+    loadWhitelistSettings(db).then((items) => setWhitelist(items));
+
     // Tải cấu hình từ Dexie app_settings
     db.app_settings.get('config').then((item) => {
       if (item?.value) {
         const conf = item.value as unknown as AppConfig;
-        if (conf.whitelist) setWhitelist(conf.whitelist);
         if (conf.priceRules) setPriceRules(conf.priceRules);
       }
     });
@@ -72,16 +71,31 @@ export function CoreSettingsDetailScreen() {
 
   const handleAddSourceGroup = () => {
     if (!newGroupId.trim() || !newGroupName.trim()) return;
-    setWhitelist([...whitelist, { groupId: newGroupId.trim(), name: newGroupName.trim() }]);
+    const newItem: WhitelistGroupItem = {
+      groupId: newGroupId.trim(),
+      groupName: newGroupName.trim(),
+      matchingRule: 'EXACT',
+      priority: 1,
+      isEnabled: true,
+      addedAt: Date.now(),
+      lastUpdatedAt: Date.now(),
+    };
+    const nextWhitelist = [...whitelist, newItem];
+    setWhitelist(nextWhitelist);
+    syncWhitelistSettings(nextWhitelist, db);
     setNewGroupId('');
     setNewGroupName('');
   };
 
   const handleRemoveSourceGroup = (id: string) => {
-    setWhitelist(whitelist.filter((w) => w.groupId !== id));
+    const nextWhitelist = whitelist.filter((w) => w.groupId !== id);
+    setWhitelist(nextWhitelist);
+    syncWhitelistSettings(nextWhitelist, db);
   };
 
   const handleSaveConfig = async () => {
+    await syncWhitelistSettings(whitelist, db);
+
     const configData: AppConfig = {
       whitelist,
       priceRules,
@@ -119,7 +133,17 @@ export function CoreSettingsDetailScreen() {
 
       {/* Phần 1: Whitelist Nhóm Nguồn */}
       <section class="bg-white p-5 rounded-lg border border-gray-200 shadow-sm space-y-4">
-        <h2 class="text-lg font-semibold text-gray-800">1. Quản lý Whitelist Nhóm Nguồn</h2>
+        <div class="flex items-center justify-between">
+          <h2 class="text-lg font-semibold text-gray-800">1. Quản lý Whitelist Nhóm Nguồn</h2>
+          <button
+            type="button"
+            data-testid="cta-goto-sidebar-observer"
+            onClick={() => router.navigate('/feature/n01-sidebar-observer')}
+            class="text-xs px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium rounded-lg border border-blue-200 transition-colors flex items-center gap-1.5 cursor-pointer"
+          >
+            <span>🔍 Quét Nhóm Tự Động Từ Sidebar</span>
+          </button>
+        </div>
         <div class="space-y-2">
           {whitelist.map((item) => (
             <div
@@ -127,7 +151,9 @@ export function CoreSettingsDetailScreen() {
               class="flex items-center justify-between p-2 bg-gray-50 rounded border"
             >
               <div>
-                <span class="font-medium text-gray-900">{item.name}</span>
+                <span class="font-medium text-gray-900">
+                  {item.groupName || (item as unknown as { name?: string }).name}
+                </span>
                 <span class="text-xs text-gray-500 ml-2">({item.groupId})</span>
               </div>
               <button

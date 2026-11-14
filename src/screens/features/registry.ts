@@ -1,7 +1,7 @@
 import { type ComponentType, h } from 'preact';
+import { SidebarObserverScreen } from '../sidebar-observer/SidebarObserverScreen';
 import { CoreSettingsDetailScreen } from './CoreSettingsDetailScreen';
 import {
-  N01SidebarObserverView,
   N02QueueManagerView,
   N03ChatSwitcherView,
   N04DeltaStitcherView,
@@ -48,7 +48,7 @@ export const FEATURE_COMPONENTS_MAP: Record<string, ComponentType> = {
   'core-settings': CoreSettingsDetailScreen,
 
   // 10 Dedicated Feature Nodes
-  'n01-sidebar-observer': N01SidebarObserverView,
+  'n01-sidebar-observer': SidebarObserverScreen,
   'n02-queue-manager': N02QueueManagerView,
   'n03-chat-switcher': N03ChatSwitcherView,
   'n04-delta-stitcher': N04DeltaStitcherView,

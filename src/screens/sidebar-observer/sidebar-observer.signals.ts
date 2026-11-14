@@ -1,3 +1,4 @@
+import { sendMessage } from '@/contracts/messaging';
 import type {
   DiscoveredGroupItem,
   WhitelistGroupItem,
@@ -36,25 +37,52 @@ const telemetryStats = signal<SidebarObserverTelemetryStats>({
 });
 
 let activeTelemetryChannel: BroadcastChannel | null = null;
+let storageListenerAttached = false;
 
 export function initTelemetryListener(
   channelName = 'n01_telemetry_channel',
 ): BroadcastChannel | null {
-  if (activeTelemetryChannel) return activeTelemetryChannel;
-  try {
-    if (typeof BroadcastChannel !== 'undefined') {
-      activeTelemetryChannel = new BroadcastChannel(channelName);
-      activeTelemetryChannel.onmessage = (event: MessageEvent) => {
-        if (event.data && typeof event.data === 'object') {
-          sidebarObserverSignals.updateTelemetry(event.data);
-        }
-      };
-      return activeTelemetryChannel;
+  // 1. BroadcastChannel (cho cùng Origin nếu có)
+  if (!activeTelemetryChannel) {
+    try {
+      if (typeof BroadcastChannel !== 'undefined') {
+        activeTelemetryChannel = new BroadcastChannel(channelName);
+        activeTelemetryChannel.onmessage = (event: MessageEvent) => {
+          if (event.data && typeof event.data === 'object') {
+            sidebarObserverSignals.updateTelemetry(event.data);
+          }
+        };
+      }
+    } catch {
+      // Fallback if BroadcastChannel is not supported
     }
-  } catch {
-    // Fallback if BroadcastChannel is not supported
   }
-  return null;
+
+  // 2. chrome.storage.local & onChanged (cho liên lạc xuyên Origin giữa content script và Options page)
+  if (!storageListenerAttached) {
+    try {
+      if (typeof chrome !== 'undefined' && chrome.storage?.local) {
+        chrome.storage.local.get('n01_telemetry').then((res) => {
+          if (res?.n01_telemetry && typeof res.n01_telemetry === 'object') {
+            sidebarObserverSignals.updateTelemetry(res.n01_telemetry);
+          }
+        }).catch(() => {});
+
+        if (chrome.storage.onChanged) {
+          chrome.storage.onChanged.addListener((changes, areaName) => {
+            if (areaName === 'local' && changes.n01_telemetry?.newValue) {
+              sidebarObserverSignals.updateTelemetry(changes.n01_telemetry.newValue);
+            }
+          });
+          storageListenerAttached = true;
+        }
+      }
+    } catch {
+      // Môi trường không có chrome.storage
+    }
+  }
+
+  return activeTelemetryChannel;
 }
 
 export function disposeTelemetryListener(): void {
@@ -133,19 +161,61 @@ export const sidebarObserverSignals = {
   },
 
   /**
-   * Quét các nhóm trên Sidebar DOM hiện tại và đồng bộ trạng thái whitelist.
+   * Quét các nhóm trên Sidebar DOM hiện tại (hoặc gửi IPC đến Zalo Tab nếu đang ở Options Page)
+   * và đồng bộ trạng thái whitelist.
    */
-  scanGroups: (doc?: Document, _observerInstance?: SidebarObserver): DiscoveredGroupItem[] => {
+  scanGroups: async (
+    doc?: Document,
+    _observerInstance?: SidebarObserver,
+  ): Promise<DiscoveredGroupItem[]> => {
     isLoading.value = true;
+    const targetDoc =
+      doc || (typeof document !== 'undefined' ? document : (null as unknown as Document));
+
+    // Kiểm tra nếu có conversation list trên targetDoc -> Quét trực tiếp trên DOM
+    const hasConversationList =
+      targetDoc &&
+      (targetDoc.querySelector('#conversationList') !== null ||
+        targetDoc.querySelector('#conversationListId') !== null ||
+        targetDoc.querySelector('[data-id="div_TabMsg_ThrdChList"]') !== null);
+
+    if (hasConversationList) {
+      try {
+        const results = discoverSidebarGroups(targetDoc, whitelistGroups.value);
+        discoveredGroups.value = results;
+        telemetryStats.value = {
+          ...telemetryStats.value,
+          totalDiscovered: results.length,
+          totalWhitelisted: whitelistGroups.value.length,
+        };
+        return results;
+      } finally {
+        isLoading.value = false;
+      }
+    }
+
+    // Nếu không có conversationList trên document (ví dụ chạy trong Options page), gửi IPC tới Zalo tab
     try {
-      const results = discoverSidebarGroups(doc, whitelistGroups.value);
+      const response = await sendMessage('scanSidebarGroups', undefined);
+      const results = response?.groups || [];
       discoveredGroups.value = results;
+      refreshDiscoveryWhitelistFlags();
       telemetryStats.value = {
         ...telemetryStats.value,
         totalDiscovered: results.length,
         totalWhitelisted: whitelistGroups.value.length,
       };
       return results;
+    } catch {
+      // Fallback: nếu IPC không thành công (Zalo tab chưa mở), thử quét trên targetDoc cục bộ
+      const fallbackResults = discoverSidebarGroups(targetDoc, whitelistGroups.value);
+      discoveredGroups.value = fallbackResults;
+      telemetryStats.value = {
+        ...telemetryStats.value,
+        totalDiscovered: fallbackResults.length,
+        totalWhitelisted: whitelistGroups.value.length,
+      };
+      return fallbackResults;
     } finally {
       isLoading.value = false;
     }
