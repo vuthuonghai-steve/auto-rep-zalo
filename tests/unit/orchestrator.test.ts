@@ -127,7 +127,9 @@ describe('Phase 7: Full Orchestrator & Cross-Cutting Polish (Unit Tests)', () =>
     await orch.start();
 
     // Giả lập observer phát hiện tin nhắn mới với GroupDetectedEvent
-    const observer = (orch as unknown as { observer?: { onNewMessage: (gid: string, evt?: unknown) => void } }).observer;
+    const observer = (
+      orch as unknown as { observer?: { onNewMessage: (gid: string, evt?: unknown) => void } }
+    ).observer;
     expect(observer).toBeDefined();
 
     const enqueueSpy = vi.spyOn(queueManager, 'enqueue');

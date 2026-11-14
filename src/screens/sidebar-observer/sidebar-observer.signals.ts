@@ -62,11 +62,14 @@ export function initTelemetryListener(
   if (!storageListenerAttached) {
     try {
       if (typeof chrome !== 'undefined' && chrome.storage?.local) {
-        chrome.storage.local.get('n01_telemetry').then((res) => {
-          if (res?.n01_telemetry && typeof res.n01_telemetry === 'object') {
-            sidebarObserverSignals.updateTelemetry(res.n01_telemetry);
-          }
-        }).catch(() => {});
+        chrome.storage.local
+          .get('n01_telemetry')
+          .then((res) => {
+            if (res?.n01_telemetry && typeof res.n01_telemetry === 'object') {
+              sidebarObserverSignals.updateTelemetry(res.n01_telemetry);
+            }
+          })
+          .catch(() => {});
 
         if (chrome.storage.onChanged) {
           chrome.storage.onChanged.addListener((changes, areaName) => {
