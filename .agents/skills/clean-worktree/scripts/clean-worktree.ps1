@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Tự động hóa dọn dẹp toàn bộ Git Worktrees tạm thời và các nhánh subagent.
 .DESCRIPTION
@@ -35,9 +35,12 @@ foreach ($line in $lines) {
         $normRoot = [System.IO.Path]::GetFullPath($repoRoot).TrimEnd('\', '/')
         
         if ($normPath -ne $normRoot) {
-            $worktreesToRemove += [PSCustomObject]@{
-                Path = $path
-                Branch = $branch
+            # Chỉ gỡ bỏ worktree của subagents (trong .gemini/antigravity/worktrees hoặc nhánh bắt đầu bằng subagent-)
+            if ($path -match '\.gemini[\\/]antigravity[\\/]worktrees' -or $branch -match '^subagent-') {
+                $worktreesToRemove += [PSCustomObject]@{
+                    Path = $path
+                    Branch = $branch
+                }
             }
         }
     }

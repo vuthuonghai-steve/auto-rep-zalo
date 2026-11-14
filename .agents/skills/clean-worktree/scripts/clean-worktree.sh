@@ -14,8 +14,10 @@ echo "[1/4] Thư mục gốc: $REPO_ROOT"
 echo "[2/4] Đang quét và gỡ bỏ worktrees tạm..."
 git worktree list --porcelain | grep "^worktree " | cut -d' ' -f2- | while read -r wt_path; do
     if [ "$wt_path" != "$REPO_ROOT" ]; then
-        echo "  -> Gỡ bỏ worktree: $wt_path"
-        git worktree remove --force "$wt_path" || true
+        if [[ "$wt_path" =~ \.gemini/antigravity/worktrees ]] || [[ "$wt_path" =~ subagent- ]]; then
+            echo "  -> Gỡ bỏ worktree: $wt_path"
+            git worktree remove --force "$wt_path" || true
+        fi
     fi
 done
 
