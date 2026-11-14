@@ -22,13 +22,13 @@ describe('Node 01: Sidebar Observer Screen & Reactive Signals Store (tests/unit/
   });
 
   describe('Suite 1: Signals Store - Scan & Discovery Lifecycle', () => {
-    it('should scan groups from DOM fixture and update reactive signals', () => {
+    it('should scan groups from DOM fixture and update reactive signals', async () => {
       createMockSidebarDOM({ attachToDocument: true });
 
       expect(sidebarObserverSignals.discoveredGroups.value).toHaveLength(0);
       expect(sidebarObserverSignals.totalDiscovered.value).toBe(0);
 
-      const results = sidebarObserverSignals.scanGroups(document);
+      const results = await sidebarObserverSignals.scanGroups(document);
 
       expect(results.length).toBeGreaterThanOrEqual(3);
       expect(sidebarObserverSignals.discoveredGroups.value.length).toBe(results.length);
@@ -38,9 +38,9 @@ describe('Node 01: Sidebar Observer Screen & Reactive Signals Store (tests/unit/
       expect(sidebarObserverSignals.telemetryStats.value.totalDiscovered).toBe(results.length);
     });
 
-    it('should filter discovered groups by search query (name or id)', () => {
+    it('should filter discovered groups by search query (name or id)', async () => {
       createMockSidebarDOM({ attachToDocument: true });
-      sidebarObserverSignals.scanGroups(document);
+      await sidebarObserverSignals.scanGroups(document);
 
       expect(sidebarObserverSignals.filteredGroups.value.length).toBeGreaterThanOrEqual(3);
 
@@ -65,7 +65,7 @@ describe('Node 01: Sidebar Observer Screen & Reactive Signals Store (tests/unit/
 
     it('should filter groups by activeFilter tab (ALL / WHITELISTED / NON_WHITELISTED)', async () => {
       createMockSidebarDOM({ attachToDocument: true });
-      sidebarObserverSignals.scanGroups(document);
+      await sidebarObserverSignals.scanGroups(document);
 
       const firstGroup = sidebarObserverSignals.discoveredGroups.value[0];
       if (!firstGroup) throw new Error('First group not found');
@@ -96,7 +96,7 @@ describe('Node 01: Sidebar Observer Screen & Reactive Signals Store (tests/unit/
   describe('Suite 2: 1-Click Whitelist Enrollment & Hot-Sync Integration', () => {
     it('should add group to whitelist, update RAM observer, and persist to Dexie app_settings', async () => {
       createMockSidebarDOM({ attachToDocument: true });
-      sidebarObserverSignals.scanGroups(document);
+      await sidebarObserverSignals.scanGroups(document);
 
       const observer = new SidebarObserver({
         whitelist: [],
@@ -164,7 +164,7 @@ describe('Node 01: Sidebar Observer Screen & Reactive Signals Store (tests/unit/
 
     it('should load initial whitelist from Dexie on startup via loadWhitelistFromDB', async () => {
       createMockSidebarDOM({ attachToDocument: true });
-      sidebarObserverSignals.scanGroups(document);
+      await sidebarObserverSignals.scanGroups(document);
 
       // Ghi sẵn 1 rule vào Dexie
       await testDb.app_settings.put({

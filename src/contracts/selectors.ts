@@ -42,7 +42,7 @@ export const SELECTORS = {
   SIDEBAR_ITEM_TITLE: {
     name: 'SIDEBAR_ITEM_TITLE',
     tier1_semantic:
-      'div-b16.conv-item-title__name.truncate.grid-item > div.truncate, div-b16.conv-item-title__name .truncate, .conv-name',
+      ':is(div-b16, div-16).conv-item-title__name > div.truncate, div-b16.conv-item-title__name.truncate.grid-item > div.truncate, :is(div-b16, div-16).conv-item-title__name .truncate, .conv-name',
     tier2_hierarchy:
       '.conv-item-title__name > div.truncate, .conv-item-title__name .truncate, .conv-info .conv-name',
     tier3_class: '.conv-item-title__name, .conv-name',

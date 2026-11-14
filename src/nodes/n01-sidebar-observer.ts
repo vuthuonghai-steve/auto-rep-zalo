@@ -353,7 +353,7 @@ export class SidebarObserver {
   }
 
   /**
-   * Phát sóng snapshot viễn trắc qua BroadcastChannel.
+   * Phát sóng snapshot viễn trắc qua BroadcastChannel và chrome.storage.local.
    */
   broadcastTelemetry(customSnapshot?: N01TelemetrySnapshot): void {
     this.lastActiveTimestamp = Date.now();
@@ -372,6 +372,17 @@ export class SidebarObserver {
       } catch {
         // Fallback an toàn nếu channel gặp sự cố
       }
+    }
+
+    // Đồng bộ telemetry lên chrome.storage.local để trang Options đọc xuyên Origin
+    try {
+      if (typeof chrome !== 'undefined' && chrome.storage?.local) {
+        chrome.storage.local.set({ n01_telemetry: snapshot }).catch(() => {
+          // Bỏ qua lỗi context invalidated trong extension lifecycle
+        });
+      }
+    } catch {
+      // Môi trường không có chrome.storage
     }
   }
 
@@ -789,13 +800,14 @@ export class SidebarObserver {
 
   /**
    * Bóc tách groupId từ thẻ hội thoại:
-   * 1. Ưu tiên thuộc tính anim-data-id (bắt đầu bằng 'g...').
-   * 2. Fallback tìm thẻ ảnh avatar img[data-ava-uid^="g"] lấy data-ava-uid.
-   * 3. Fallback lấy data-id (bỏ qua giá trị template div_TabMsg_ThrdChItem).
+   * 1. Ưu tiên tuyệt đối thuộc tính anim-data-id khi có mặt (tránh fallback nhầm vào img[data-ava-uid] khi gặp avatar ghép zavatar-multi).
+   * 2. Fallback data-id bắt đầu bằng 'conv-'.
+   * 3. Fallback tìm thẻ ảnh avatar img[data-ava-uid^="g"] lấy data-ava-uid.
+   * 4. Fallback data-id khác div_TabMsg_ThrdChItem.
    */
   extractGroupId(itemElement: HTMLElement): string | null {
     const animDataId = itemElement.getAttribute('anim-data-id');
-    if (animDataId?.startsWith('g')) {
+    if (animDataId) {
       return animDataId;
     }
 
@@ -818,10 +830,6 @@ export class SidebarObserver {
 
     if (avaUid) {
       return avaUid;
-    }
-
-    if (animDataId) {
-      return animDataId;
     }
 
     return null;
@@ -938,7 +946,9 @@ export class SidebarObserver {
     const hasUnreadClass =
       itemElement.querySelector('.z-conv-message.--unread') !== null ||
       itemElement.querySelector('.unread-red-dot') !== null ||
-      itemElement.querySelector('.unread-badge') !== null;
+      itemElement.querySelector('.unread-badge') !== null ||
+      itemElement.querySelector('.preview-time.--b') !== null ||
+      itemElement.querySelector('.important-unread-icon-mention') !== null;
     const hasUnread = badgeResult.hasUnread || hasUnreadClass;
 
     if (!hasUnread) {
@@ -1284,11 +1294,18 @@ export function discoverSidebarGroups(
       ? rawEl
       : (rawEl.closest('.msg-item') as HTMLElement) || rawEl;
 
-    // 1. Trích xuất groupId
-    const rawId = item.getAttribute('anim-data-id') || item.getAttribute('data-id') || '';
+    // 1. Trích xuất groupId: Ưu tiên tuyệt đối anim-data-id
+    const animId = item.getAttribute('anim-data-id');
+    const dataId = item.getAttribute('data-id');
     const imgEl = item.querySelector<HTMLImageElement>('img[data-ava-uid]');
     const avatarUid = imgEl?.getAttribute('data-ava-uid') || '';
-    const groupId = (rawId.startsWith('g') ? rawId : avatarUid) || rawId;
+    const groupId =
+      animId ||
+      (dataId?.startsWith('conv-') ? dataId : null) ||
+      (avatarUid.startsWith('g') ? avatarUid : null) ||
+      (dataId && dataId !== 'div_TabMsg_ThrdChItem' ? dataId : null) ||
+      avatarUid ||
+      '';
 
     if (!groupId || seenIds.has(groupId)) continue;
     seenIds.add(groupId);
@@ -1369,15 +1386,57 @@ export async function loadWhitelistSettings(
   const record =
     (await dbInstance.app_settings.get('n01_whitelist_groups')) ||
     (await dbInstance.app_settings.get('whitelist_groups'));
-  if (!record || !record.value) {
-    return [];
+  if (record?.value) {
+    const val = record.value as { groups?: WhitelistGroupItem[] };
+    if (Array.isArray(val.groups) && val.groups.length > 0) {
+      return val.groups;
+    }
+    if (
+      Array.isArray(record.value) &&
+      (record.value as unknown as WhitelistGroupItem[]).length > 0
+    ) {
+      return record.value as unknown as WhitelistGroupItem[];
+    }
   }
-  const val = record.value as { groups?: WhitelistGroupItem[] };
-  if (Array.isArray(val.groups)) {
-    return val.groups;
+
+  // Tự động chuyển đổi dữ liệu kế thừa (Auto-Migration) từ key 'config' nếu có
+  const configRecord = await dbInstance.app_settings.get('config');
+  const legacyVal = configRecord?.value as {
+    whitelist?: Array<{
+      groupId?: string | number;
+      name?: string;
+      groupName?: string;
+      matchingRule?: 'EXACT' | 'CONTAINS';
+      addedAt?: number;
+    }>;
+  };
+
+  if (Array.isArray(legacyVal?.whitelist) && legacyVal.whitelist.length > 0) {
+    const now = Date.now();
+    const migrated: WhitelistGroupItem[] = [];
+    for (const item of legacyVal.whitelist) {
+      if (item && typeof item === 'object' && item.groupId != null) {
+        migrated.push({
+          groupId: String(item.groupId),
+          groupName: item.groupName || item.name || `Nhóm ${item.groupId}`,
+          matchingRule: item.matchingRule || 'EXACT',
+          priority: 1,
+          isEnabled: true,
+          addedAt: item.addedAt || now,
+          lastUpdatedAt: now,
+        });
+      }
+    }
+
+    if (migrated.length > 0) {
+      await dbInstance.app_settings.put({
+        key: 'n01_whitelist_groups',
+        value: { groups: migrated },
+        updatedAt: now,
+      });
+      return migrated;
+    }
   }
-  if (Array.isArray(record.value)) {
-    return record.value as unknown as WhitelistGroupItem[];
-  }
+
   return [];
 }
