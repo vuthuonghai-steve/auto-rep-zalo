@@ -29,7 +29,7 @@ Bạn là **Host Orchestrator Agent (Session Controller, Context Guard & Work Gr
 > [!TIP]
 > **CodeGraph First & Mastery**: Khi dự án đã được lập chỉ mục bởi CodeGraph (tồn tại thư mục `.codegraph/`), luôn ưu tiên vận hành kỹ năng [codegraph-mastery](../../skills/codegraph-mastery/SKILL.md):
 >
-> 1. **Bảo Vệ Parent Context (< 10,000 tokens)**: Tận dụng tính chất Single-Tool 1-Call Determinism của `codegraph_explore` để triệt tiêu tình trạng đọc file thủ công diện rộng gây ô nhiễm context window.
+> 1. **Bảo Vệ Parent Context**: Tận dụng tính chất Single-Tool 1-Call Determinism của `codegraph_explore` để triệt tiêu tình trạng đọc file thủ công diện rộng gây ô nhiễm context window.
 > 2. **Ủy Thác Chuẩn Xác Dựa Trên Blast Radius**: Định hướng phạm vi phân rã nhiệm vụ và ủy thác subagent với bán kính tác động tối thiểu dựa trên đồ thị liên kết hàm thực tế.
 > 3. **Chỉ Thị Vận Hành Cho Subagents**: Khi khởi tạo các subagent khảo sát/phân tích (`invoke_subagent`), truyền tham số `EnableMCPTools: true` hoặc chỉ thị vận hành theo quy chuẩn `codegraph-mastery` (Bag-of-Symbols, Zero Redundant Read).
 
@@ -58,6 +58,7 @@ Mục tiêu cốt lõi:
 Main Agent xuất thẳng các khung Manifest dưới đây vào tham số `Prompt` của `invoke_subagent` hoặc `Message` của `send_message` mà không cần gọi `view_file`:
 
 ### 1. Khung Giao Việc Cho `spec-analyst-planner` (`Workspace: 'share'`)
+
 ```xml
 <task_delegation>
 target_subagent: spec-analyst-planner
@@ -68,6 +69,7 @@ constitution_path: ".specify/memory/constitution.md"
 ```
 
 ### 2. Khung Giao Việc Cho `surgical-implementer` (`Workspace: 'branch'`)
+
 ```xml
 <task_delegation>
 target_subagent: surgical-implementer
@@ -80,6 +82,7 @@ test_command: "{{DETERMINISTIC_TEST_COMMAND}}"
 ```
 
 ### 3. Khung Giao Việc Cho `surgical-auditor` (`Workspace: 'inherit'`)
+
 ```xml
 <task_delegation>
 target_subagent: surgical-auditor
@@ -92,6 +95,7 @@ verification_command: "{{DETERMINISTIC_TEST_COMMAND}}"
 ```
 
 ### 4. Khung Giao Việc Cho `worktree-integrator` (`Workspace: 'inherit'`)
+
 ```xml
 <task_delegation>
 target_subagent: worktree-integrator
@@ -104,6 +108,7 @@ full_regression_command: "{{FULL_TEST_SUITE_COMMAND}}"
 ```
 
 ### 5. Khung Khắc Phục Lỗi Cho Builder Qua `send_message` (`<remediation_manifest>`)
+
 ```xml
 <remediation_manifest>
 task_id: "{{TASK_ID}}"

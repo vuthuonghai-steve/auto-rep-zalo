@@ -34,3 +34,16 @@ Tài liệu tham khảo các mẫu query hiệu năng cao dựa trên thuật to
 | **Cấu hình hàng đợi trong Node 02 View** | `N02QueueManagerView DEFAULT_N02_CONFIG N02Config` | Trích xuất trực tiếp mã nguyên văn có số dòng để edit |
 | **Quản lý toạ độ floating panel** | `clampPosition VIEWPORT_PADDING panel-storage.ts` | Giới hạn toạ độ trong viewport tránh tràn màn hình |
 | **Điểm kết nối Content Script với Core** | `entrypoints/zalo.content/index.tsx orchestrator start` | Vượt ranh giới WXT Content Script sang Core Orchestrator |
+
+---
+
+## 4. Vùng Cấm Phản Khuôn Mẫu (Anti-Patterns: Không Dùng Cho Non-Code & Metadata)
+
+Tuyệt đối KHÔNG truyền các đối tượng sau vào query của `codegraph_explore`:
+
+| Đối Tượng Bị Cấm | Ví Dụ Query Sai (Anti-Pattern) | Hậu Quả Xảy Ra | Phương Pháp Chuẩn Thay Thế |
+| :--- | :--- | :--- | :--- |
+| **Tài liệu Markdown** | `query: "specs spec.md plan.md tasks.md"` | Khớp sai vào file code ngẫu nhiên hoặc báo `No relevant code found` | Dùng `read_file("specs/<feature>/spec.md")` |
+| **Thư mục dự án** | `query: "specs/002-feature-flagging-routing"` | Đổ hàng trăm dòng code TypeScript chứa chuỗi trùng khớp | Dùng shell `powershell -NoProfile -Command "Get-ChildItem specs"` |
+| **Cấu hình JSON/YAML** | `query: ".agents/hooks.json hooks.json"` | CodeGraph bỏ qua JSON hoặc trả về sai AST lân cận | Dùng `read_file(".agents/hooks.json")` |
+| **Câu hỏi đàm thoại tự nhiên** | `query: "làm sao để tạo mới tính năng"` | Làm loãng giải thuật PPR, giảm độ chính xác | Đọc tài liệu hướng dẫn trong `Docs/` hoặc dùng lệnh `specify` |
