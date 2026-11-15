@@ -1,0 +1,54 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "SubagentCompletionPayload",
+  "description": "JSON Schema khế ước cho kết quả hoàn thành subagent bàn giao về host-orchestrator",
+  "type": "object",
+  "required": [
+    "status",
+    "task_id",
+    "test_exit_code",
+    "passed_assertions",
+    "blast_radius_files"
+  ],
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": ["SUCCESS", "FAILURE", "BLOCKED"],
+      "description": "Trạng thái nghiệm thu của tác vụ (SUCCESS, FAILURE, hoặc BLOCKED)"
+    },
+    "task_id": {
+      "type": "string",
+      "pattern": "^T[0-9]{3}$",
+      "description": "Mã định danh tác vụ nguyên tử, định dạng Txxx (ví dụ: T004)"
+    },
+    "test_exit_code": {
+      "type": "integer",
+      "enum": [0, 1],
+      "description": "Mã thoát nhị phân của test runner (0: thành công, 1: thất bại)"
+    },
+    "passed_assertions": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Số lượng khẳng định kiểm thử đã vượt qua"
+    },
+    "blast_radius_files": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 3,
+      "description": "Danh sách các tệp tin thay đổi thuộc phạm vi blast radius (tối đa 3 tệp)"
+    },
+    "error_summary": {
+      "type": "string",
+      "maxLength": 120,
+      "description": "Tóm tắt lỗi cô đọng tối đa 120 ký tự khi status là FAILURE hoặc BLOCKED"
+    },
+    "error_message": {
+      "type": "string",
+      "maxLength": 120,
+      "description": "Thông báo lỗi cô đọng tối đa 120 ký tự (bí danh tương thích của error_summary)"
+    }
+  },
+  "additionalProperties": false
+}
