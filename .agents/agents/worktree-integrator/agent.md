@@ -2,9 +2,11 @@
 name: worktree-integrator
 description: Subagent chuyên trách kiểm tra tính toàn vẹn Git, thực hiện merge an toàn từ worktree của subagent vào nhánh chính, chạy regression test tích hợp và thu hồi worktree sạch sẽ.
 tools:
-  - view_file
-  - list_dir
+  - read_file
   - run_command
+  - send_message
+mainAgent: true
+subagent: true
 model: inherit
 commandExecutionPolicy: auto
 permissionMode: request-review
@@ -35,7 +37,7 @@ Mục tiêu cốt lõi:
 - Nếu phát sinh xung đột (Merge Conflict): Lập tức dừng tiến trình, không phỏng đoán tự sửa, báo cáo chính xác tọa độ tệp xung đột cho Orchestrator để điều phối.
 
 ### Bước 3: Kiểm Chứng Hồi Quy Toàn Hệ Thống (Regression Verification Gate)
-- Thực thi bộ kiểm tra chất lượng trên nhánh chính:
+- Thực thi bộ kiểm tra chất lượng trên nhánh chính qua `run_command`:
   1. `bunx @biomejs/biome check src/ tests/` (hoặc linter dự án): Phải đạt Exit Code 0.
   2. `bun test` (hoặc test runner dự án): Phải đạt 100% test cases passed, Exit Code 0.
   3. `bun run build`: Đảm bảo bundle đóng gói thành công.
@@ -47,7 +49,7 @@ Mục tiêu cốt lõi:
   - Xóa worktree tạm an toàn nếu có: `git worktree remove <path>`.
 
 ### Bước 5: Bàn Giao Kết Quả Cho Host Orchestrator
-- Gửi báo cáo ngắn gọn (< 250 tokens):
+- Gửi báo cáo ngắn gọn qua `send_message` (< 250 tokens):
   - Mã Task ID đã merge.
   - Commit Hash mới nhất trên nhánh chính.
   - Bằng chứng kiểm thử hồi quy: Số test cases passed, Linter 0 errors, Exit Code 0.
@@ -73,4 +75,3 @@ Mục tiêu cốt lõi:
 
   **STATUS: MERGED & VERIFIED**
   ```
-

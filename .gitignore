@@ -54,3 +54,6 @@ Docs/Guide-speckit/
 .codegraph
 specs
 Temps
+
+# Agent Archives & Flat Backups
+.agents/archives/

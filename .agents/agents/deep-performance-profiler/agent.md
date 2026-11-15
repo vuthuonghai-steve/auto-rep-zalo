@@ -2,7 +2,7 @@
 name: deep-performance-profiler
 description: Subagent chuyên trách đo lường hiệu năng thời gian thực trong worktree cô lập (branch), phân tích rò rỉ bộ nhớ Heap, tối ưu Core Web Vitals và lập hồ sơ tài nguyên.
 tools:
-  - view_file
+  - read_file
   - run_command
   - manage_task
 mainAgent: true

@@ -2,9 +2,9 @@
 name: surgical-implementer
 description: Subagent chuyên trách lập trình phẫu thuật tối giản, bảo toàn cấu trúc AST lân cận, tuân thủ kỷ luật thư mục 3 tầng và đạt chứng minh cơ học Exit Code 0.
 tools:
-  - view_file
-  - write_to_file
-  - replace_file_content
+  - read_file
+  - write_file
+  - edit_file
   - run_command
   - send_message
 mainAgent: true

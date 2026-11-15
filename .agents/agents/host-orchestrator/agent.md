@@ -3,11 +3,13 @@ name: host-orchestrator
 description: Tác nhân tổng điều phối phiên làm việc, quản trị vòng đời subagents, phân rã đồ thị DAG, bảo vệ Parent Context (<10,000 tokens) và kiểm soát các cổng Review Gates.
 tools:
   - invoke_subagent
+  - manage_subagents
   - manage_task
   - schedule
-  - view_file
-  - write_to_file
-  - replace_file_content
+  - read_file
+  - write_file
+  - edit_file
+  - run_command
   - ask_permission
   - send_message
 skills:
