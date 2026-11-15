@@ -8,12 +8,14 @@ Kiểm chứng:
 3. Không can thiệp (allow) các thao tác ghi mã nguồn (write_file, edit_file).
 4. Độ trễ kiểm định siêu tốc (< 30ms, trung bình <= 15ms).
 5. Khả năng chịu lỗi và chuẩn hóa cấu trúc payload (BOM, JSON string args).
+6. Tương thích giao diện thực thi CLI runner (dispatcher.main(), sys.argv, exit code 0).
 """
 
 import os
 import sys
 import time
 import json
+import io
 import unittest
 from unittest.mock import patch
 
@@ -188,7 +190,13 @@ class TestDispatcherPayloadExtraction(unittest.TestCase):
 
 
 class TestDispatcherRoutingAndResilience(unittest.TestCase):
-    """Kiểm tra bộ định tuyến dispatch() và khả năng bắt lỗi phòng thủ."""
+    """Kiểm tra bộ định tuyến dispatch(), hàm handle_stop và khả năng bắt lỗi phòng thủ."""
+
+    def test_handle_stop_direct(self):
+        """Kiểm chứng trực tiếp hàm handle_stop trả về decision allow."""
+        payload = {"status": "SUCCESS", "response": "All tasks verified"}
+        result = handle_stop(payload)
+        self.assertEqual(result, {"decision": "allow"})
 
     def test_dispatch_pre_tool_use_event(self):
         payload = {"name": "write_file", "args": {}}
@@ -205,11 +213,44 @@ class TestDispatcherRoutingAndResilience(unittest.TestCase):
         self.assertEqual(res.get("decision"), "allow")
 
     def test_dispatch_exception_handling_failsafe(self):
-        """Khi handler ném ngoại lệ đột ngột, dispatch phải trả về deny phòng thủ."""
+        """Khi handler ném ngoại lệ đột ngột, dispatch phải trả về deny phòng thủ mà không crash."""
         with patch.dict(dispatcher.EVENT_ROUTER, {"ExplosiveEvent": lambda p: 1 / 0}):
-            res = dispatch("ExplosiveEvent", {})
-            self.assertEqual(res.get("decision"), "deny")
-            self.assertIn("INTERNAL_DISPATCHER_ERROR", res.get("reason", ""))
+            with patch("sys.stderr.write"):
+                res = dispatch("ExplosiveEvent", {})
+                self.assertEqual(res.get("decision"), "deny")
+                self.assertIn("INTERNAL_DISPATCHER_ERROR", res.get("reason", ""))
+
+
+class TestDispatcherCLIRunner(unittest.TestCase):
+    """Kiểm tra khả năng tương thích khi thực thi dispatcher.main() qua giao diện CLI."""
+
+    def test_cli_pre_tool_use_allow(self):
+        test_args = [
+            "dispatcher.py",
+            "--event", "PreToolUse",
+            "--payload", json.dumps({"name": "write_file", "args": {}})
+        ]
+        with patch.object(sys, "argv", test_args):
+            with patch("sys.stdout", new_callable=io.StringIO) as mock_stdout:
+                with self.assertRaises(SystemExit) as cm:
+                    dispatcher.main()
+                self.assertEqual(cm.exception.code, 0)
+                parsed = json.loads(mock_stdout.getvalue().strip())
+                self.assertEqual(parsed.get("decision"), "allow")
+
+    def test_cli_stop_event(self):
+        test_args = [
+            "dispatcher.py",
+            "--event", "Stop",
+            "--payload", "{}"
+        ]
+        with patch.object(sys, "argv", test_args):
+            with patch("sys.stdout", new_callable=io.StringIO) as mock_stdout:
+                with self.assertRaises(SystemExit) as cm:
+                    dispatcher.main()
+                self.assertEqual(cm.exception.code, 0)
+                parsed = json.loads(mock_stdout.getvalue().strip())
+                self.assertEqual(parsed.get("decision"), "allow")
 
 
 class TestDispatcherPerformanceLatency(unittest.TestCase):
@@ -253,9 +294,6 @@ test_command: "bun test"
             )
 
         avg_latency = sum(durations_ms) / len(durations_ms)
-        max_latency = max(durations_ms)
-
-        print(f"\n[PERF BENCHMARK] PreToolUse Latency: Avg={avg_latency:.4f}ms | Max={max_latency:.4f}ms")
         self.assertLess(avg_latency, 15.0, f"Average latency ({avg_latency:.3f}ms) exceeds 15ms")
 
 
