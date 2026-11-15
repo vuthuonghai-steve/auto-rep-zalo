@@ -17,7 +17,7 @@ rules:
 
 # TỔNG QUAN HỆ THỐNG VẤN ĐỀ & BỘ TIÊU CHÍ ĐÁNH GIÁ KIẾN TRÚC HARNESS
 
-Tài liệu này đóng vai trò mục lục điều phối và xác lập khung tiêu chuẩn đánh giá cho 4 tài liệu chuyên sâu thuộc phân hệ phân tích kiến trúc tác nhân, đặt tại `Docs/AGENTS_ANALYSTS/harness-architecture-evaluation/`.
+Tài liệu này đóng vai trò mục lục điều phối và xác lập khung tiêu chuẩn đánh giá cho 5 tài liệu chuyên sâu thuộc phân hệ phân tích kiến trúc tác nhân, đặt tại `Docs/AGENTS_ANALYSTS/harness-architecture-evaluation/`.
 
 ```mermaid
 flowchart TD
@@ -25,6 +25,7 @@ flowchart TD
     Hub --> Doc2["02-domain-dispatcher-hook-pattern.md\n(Composite Domain Dispatcher Pattern)"]
     Hub --> Doc3["03-sycophancy-and-pretooluse-mechanics.md\n(PreToolUse.overwrite & Hook Interception)"]
     Hub --> Doc4["04-structured-output-and-rule-to-script-matrix.md\n(Rule-to-Script Matrix & Red-Team Testing)"]
+    Hub --> Doc5["05-native-swarm-forking-architecture.md\n(Native Swarm Forking & Cold-Start Elimination)"]
 ```
 
 ---
@@ -64,6 +65,7 @@ Hệ thống tài liệu bao gồm:
 - [02-domain-dispatcher-hook-pattern.md](02-domain-dispatcher-hook-pattern.md): Thiết kế kiến trúc Composite Domain Dispatcher gom 13 scripts thành 1 entrypoint duy nhất qua `hooks.json`.
 - [03-sycophancy-and-pretooluse-mechanics.md](03-sycophancy-and-pretooluse-mechanics.md): Bằng chứng thực nghiệm trích xuất từ nhị phân `agy.exe` về `PreToolUse.overwrite` và cơ chế can thiệp ngữ cảnh của Subagent.
 - [04-structured-output-and-rule-to-script-matrix.md](04-structured-output-and-rule-to-script-matrix.md): Ma trận phân định ranh giới Rule vs Script; kỹ thuật Red-Team Testing chống bệnh tạo test hời hợt.
+- [05-native-swarm-forking-architecture.md](05-native-swarm-forking-architecture.md): Thiết kế kiến trúc Native Swarm với kỹ thuật Forking Context; triệt tiêu Cold-Start Tax và chống Deadlock Windows.
 
 </context>
 
