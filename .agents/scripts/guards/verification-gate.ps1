@@ -1,4 +1,4 @@
-# .agents/scripts/guards/verification-gate.ps1
+﻿# .agents/scripts/guards/verification-gate.ps1
 # Hook Type: Stop
 # Enforces Binary Definition of Done (Gate 5) & Release Mode Quality Gate (Hybrid XML-YAML Architecture)
 
@@ -34,7 +34,10 @@ $details = @{
     xml_yaml_hybrid = "SKIPPED"
     mixed_payload = "SKIPPED"
     clickable_links = "SKIPPED"
+    ai_first_format = "SKIPPED"
 }
+$decision = "allow"
+$denyExplanation = $null
 
 try {
     if ($InputJson -match '(\{[\s\S]*\})') {
@@ -50,9 +53,9 @@ try {
         [Console]::Error.WriteLine("[VERIFICATION GATE] Hoàn tất phiên làm việc. Xác thực cổng Definition of Done thành công.")
         
         $responseText = if ($payload.response) { $payload.response } else { "" }
+        $guardsDir = $PSScriptRoot
+
         if ($responseText) {
-            $guardsDir = $PSScriptRoot
-            
             # 1. Hybrid XML-YAML Guard
             $hybridScript = Join-Path $guardsDir "xml-yaml-hybrid-guard.ps1"
             if (Test-Path $hybridScript) {
@@ -79,6 +82,79 @@ try {
                     $details.clickable_links = $clOut.status
                 } catch { $details.clickable_links = "ERROR" }
             }
+        }
+
+        # 4. Dual-Channel Gate Channel 1: AI-First Triad Format Verifier (specs/** va Docs/**)
+        $verifyScript = [System.IO.Path]::GetFullPath((Join-Path $guardsDir "..\..\skills\ai-first-doc-formatter\scripts\verify-ai-first-format.py"))
+        if (Test-Path $verifyScript) {
+            $repoRoot = [System.IO.Path]::GetFullPath((Join-Path $guardsDir "..\..\.."))
+            $changedFiles = @()
+
+            try {
+                $porcelain = & git status --porcelain 2>$null
+                if ($porcelain) {
+                    foreach ($line in ($porcelain -split "`r?`n")) {
+                        if ($line -match '^[ MADRCU?!]{2}\s+(.*)$') {
+                            $p = $matches[1].Trim('"').Trim()
+                            if ($p -match '->\s*(.*)$') { $p = $matches[1].Trim('"').Trim() }
+                            if ($p) { $changedFiles += $p }
+                        }
+                    }
+                }
+                $committedDiff = & git diff --name-only HEAD~1 2>$null
+                if ($committedDiff) {
+                    foreach ($line in ($committedDiff -split "`r?`n")) {
+                        $p = $line.Trim('"').Trim()
+                        if ($p) { $changedFiles += $p }
+                    }
+                }
+            } catch {}
+
+            $changedFiles = $changedFiles | Select-Object -Unique
+
+            # Diff Scope Isolation (EC-001): Chi loc specs/** va docs/** (.md), loai tru docs/archives/
+            $inScopeDocs = @()
+            foreach ($f in $changedFiles) {
+                $norm = $f.Replace('\', '/').ToLowerInvariant()
+                if (($norm.StartsWith("specs/") -or $norm.StartsWith("docs/")) -and $norm.EndsWith(".md")) {
+                    if (-not $norm.StartsWith("docs/archives/")) {
+                        $inScopeDocs += $f
+                    }
+                }
+            }
+
+            if ($inScopeDocs.Count -gt 0) {
+                $failedDocs = @()
+                $failureMessages = @()
+
+                foreach ($doc in $inScopeDocs) {
+                    $targetPath = [System.IO.Path]::GetFullPath((Join-Path $repoRoot $doc))
+                    if (Test-Path $targetPath) {
+                        $verifyOut = & python $verifyScript $targetPath 2>&1
+                        $exitCode = $LASTEXITCODE
+                        if ($exitCode -ne 0) {
+                            $failedDocs += $doc
+                            $outStr = ($verifyOut | Out-String).Trim()
+                            $failureMessages += "[FAIL: $doc]`n$outStr"
+                        }
+                    }
+                }
+
+                if ($failedDocs.Count -gt 0) {
+                    $status = "DENY"
+                    $decision = "deny"
+                    $details.ai_first_format = "FAILED"
+                    $details.failed_files = $failedDocs
+                    $denyExplanation = "Tài liệu đặc tả/kỹ thuật vi phạm chuẩn AI-First Triad (verify-ai-first-format.py):`n" + ($failureMessages -join "`n`n")
+                    [Console]::Error.WriteLine("[VERIFICATION GATE][DENY] Phát hiện $($failedDocs.Count) tài liệu vi phạm chuẩn AI-First Triad.")
+                } else {
+                    $details.ai_first_format = "PASSED"
+                }
+            } else {
+                $details.ai_first_format = "SKIPPED_NO_CHANGES"
+            }
+        } else {
+            $details.ai_first_format = "SKIPPED_SCRIPT_NOT_FOUND"
         }
     } else {
         $details.gate5 = "TERMINATED_EARLY ($reason)"
@@ -112,5 +188,13 @@ try {
     } catch {}
 }
 
-Write-Output '{"decision": "allow"}'
+if ($decision -eq "deny") {
+    $denyObj = [ordered]@{
+        decision = "deny"
+        explanation = $denyExplanation
+    }
+    Write-Output ($denyObj | ConvertTo-Json -Compress)
+} else {
+    Write-Output '{"decision": "allow"}'
+}
 exit 0
