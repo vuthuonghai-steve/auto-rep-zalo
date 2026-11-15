@@ -24,7 +24,16 @@ flowchart TD
 
 ---
 
-## 1. Ranh Giới Bất Biến (Negative Space & Invariants)
+## 1. Nguyên Lý Vận Hành: Mô Hình Tác Giả - Biên Tập Viên (Author - Editor Pattern)
+
+Kỹ năng này hiện thực hóa mô hình phân định trách nhiệm **Author - Editor (Tác giả - Biên tập viên)** nhằm giải quyết xung đột ngân sách chú ý (Attention Budget Collision):
+- **Tác Giả (Author / Builder Agent)**: Tập trung 100% Attention Budget và Thinking Tokens cho logic thuật toán, bất biến kiến trúc và an toàn mã nguồn. Tạo ra bản thảo thô (Draft / Raw Truth) mà không bị phân tán bởi việc đếm khoảng trắng hay so khớp thẻ đóng mở XML.
+- **Biên Tập Viên (Editor / Skill ai-first-doc-formatter)**: Đảm nhiệm tư duy ngữ nghĩa (Semantic Distillation) tại các mốc bàn giao (Milestone Cognitive Gates): bóc tách Macro XML (`<instructions>`, `<context>`, `<output_contract>`), nén cấu trúc YAML <= 3 cấp, thiết lập tối thiểu 3 điều cấm (`must_not`), và trực quan hóa luồng dữ liệu bằng Mermaid.
+- **Gác Cổng Cơ Học (Mechanical Gate / Python Linter)**: Script máy `verify-ai-first-format.py` chỉ thực hiện kiểm tra hình thức nhị phân (Binary Gate: Exit Code 0/1), không can thiệp hay tự động suy đoán ngữ nghĩa.
+
+---
+
+## 2. Ranh Giới Bất Biến (Negative Space & Invariants)
 
 1. **DOC-INV-001 (Macro XML Envelope)**: Mọi tài liệu đặc tả AI-First bắt buộc phải chứa đúng 3 cặp thẻ macro cấp cao nhất: `<instructions>`, `<context>`, `<output_contract>`.
 2. **DOC-INV-002 (Indentation Guard)**: Toàn bộ cấu trúc YAML không được vượt quá 3 cấp lồng (tương đương tối đa 6 khoảng trắng thụt lề).
@@ -36,36 +45,36 @@ flowchart TD
 
 ---
 
-## 2. Bản Đồ Điều Phối Tri Thức & Công Cụ (Knowledge & Tooling Map)
+## 3. Bản Đồ Điều Phối Tri Thức & Công Cụ (Knowledge & Tooling Map)
 
-### 2.1. Tài Liệu Hướng Dẫn Chuyên Sâu (References)
+### 3.1. Tài Liệu Hướng Dẫn Chuyên Sâu (References)
 - [ai-first-triad-principles.md](references/ai-first-triad-principles.md): Nguyên lý cốt lõi của Bộ Ba Tam Hợp (XML + YAML + Markdown) và quản lý ngân sách chú ý.
 - [document-archetypes-guide.md](references/document-archetypes-guide.md): Cẩm nang hướng dẫn chi tiết 5 Document Archetypes từ Lớp 0 đến Lớp 3.
 - [thought-latency-and-anchors.md](references/thought-latency-and-anchors.md): Lý thuyết độ trễ tư duy S1-S4 và các mỏ neo ngữ nghĩa (Semantic Anchors).
 - [formatting-anti-patterns.md](references/formatting-anti-patterns.md): Nhận diện 6 mùi thiết kế tài liệu xấu và kỹ thuật khắc phục triệt để.
 
-### 2.2. Biểu Mẫu Chuẩn Cho 5 Document Archetypes (Templates)
+### 3.2. Biểu Mẫu Chuẩn Cho 5 Document Archetypes (Templates)
 - [archetype-1-constitutional.template.md](templates/archetype-1-constitutional.template.md): Mẫu hiến pháp và điều hướng hành vi L0 (Constitutional Steering).
 - [archetype-2-operational-policy.template.md](templates/archetype-2-operational-policy.template.md): Mẫu chính sách vận hành và chuẩn mực code L1 (Operational Policy).
 - [archetype-3-task-specification.template.md](templates/archetype-3-task-specification.template.md): Mẫu đặc tả tác vụ kỹ thuật nguyên tử L3 (Task Specification).
 - [archetype-4-architecture-adr.template.md](templates/archetype-4-architecture-adr.template.md): Mẫu ghi nhận quyết định kiến trúc L2 (Architecture Decision Record).
 - [archetype-5-skill-playbook.template.md](templates/archetype-5-skill-playbook.template.md): Mẫu playbook quy trình thao tác kỹ năng L1/L2 (Skill Playbook).
 
-### 2.3. Schema Kiểm Định Hình Thức (Schemas)
+### 3.3. Schema Kiểm Định Hình Thức (Schemas)
 - [ai-first-document-schema.json](schemas/ai-first-document-schema.json): Schema JSON định nghĩa cấu trúc tài liệu AI-First.
 - [yaml-constraints-schema.json](schemas/yaml-constraints-schema.json): Schema JSON kiểm tra các ràng buộc YAML.
 
-### 2.4. Công Cụ Tự Động Hóa & Kiểm Định (Scripts)
+### 3.4. Công Cụ Tự Động Hóa & Kiểm Định (Scripts)
 - [verify-ai-first-format.py](scripts/verify-ai-first-format.py): Script Python kiểm định cơ học nhị phân (Exit Code 0/1).
 - [auto-format-markdown.py](scripts/auto-format-markdown.py): Script Python tự động bọc thẻ XML, chuyển heading/must/must_not thành khung Triad.
 
-### 2.5. Ví Dụ Đối Chứng Thực Chiến (Examples)
+### 3.5. Ví Dụ Đối Chứng Thực Chiến (Examples)
 - [01-flat-to-hybrid-adr.example.md](examples/01-flat-to-hybrid-adr.example.md): Chuyển đổi quyết định kiến trúc từ văn xuôi phẳng sang chuẩn Triad.
 - [02-task-spec-packaging.example.md](examples/02-task-spec-packaging.example.md): Đóng gói task spec nâng cấp module thuế VAT vượt qua Gate kiểm định.
 
 ---
 
-## 3. Quy Trình 4 Bước Đóng Gói Chuẩn Hóa
+## 4. Quy Trình 4 Bước Đóng Gói Chuẩn Hóa
 
 ### Bước 1: Cognitive Deconstruction (Phân Tách Khối Vùng Chú Ý)
 - Phân bổ thông tin vào đúng 3 vùng chú ý vật lý:
