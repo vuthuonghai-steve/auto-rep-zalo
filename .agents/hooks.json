@@ -1,4 +1,19 @@
 {
+  "composite-domain-dispatcher": {
+    "enabled": true,
+    "PreToolUse": [
+      {
+        "matcher": "invoke_subagent|send_message",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -ExecutionPolicy Bypass -File scripts/guards/dispatcher.ps1 --event PreToolUse",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  },
   "andrew-placeholder-guard": {
     "enabled": true,
     "PostToolUse": [

@@ -1,3 +1,5 @@
 Docs
 Temps
 codegraph-mastery-workspace
+__pycache__/
+*.pyc
