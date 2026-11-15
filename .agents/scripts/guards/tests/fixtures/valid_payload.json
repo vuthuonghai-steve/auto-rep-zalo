@@ -1,0 +1,9 @@
+{
+  "status": "SUCCESS",
+  "task_id": "T001",
+  "test_exit_code": 0,
+  "passed_assertions": 1,
+  "blast_radius_files": [
+    ".agents/scripts/guards/tests/fixtures/valid_payload.json"
+  ]
+}
