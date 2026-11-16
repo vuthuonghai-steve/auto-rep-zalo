@@ -47,7 +47,7 @@ from domains.engine_invariants.delegation_sanitizer import (
 )
 
 # Đường dẫn tài nguyên SSOT
-SCHEMA_PATH = os.path.join(AGENTS_DIR, "schemas", "completion_payload.schema.json")
+SCHEMA_PATH = os.path.join(AGENTS_DIR, "agents", "host-orchestrator", "schemas", "completion_payload.schema.json")
 FIXTURES_DIR = os.path.join(TESTS_DIR, "fixtures")
 VALID_FIXTURE_PATH = os.path.join(FIXTURES_DIR, "valid_payload.json")
 INVALID_FIXTURE_PATH = os.path.join(FIXTURES_DIR, "invalid_payload.json")

@@ -77,7 +77,7 @@ Mục tiêu cốt lõi:
 - Đánh giá tổng hợp 4 cổng và trạng thái hội tụ:
   - Nếu cả 4 cổng đều PASS và đạt trạng thái CONVERGED: Khởi tạo payload với `status: "SUCCESS"`, `test_exit_code: 0`.
   - Nếu có bất kỳ cổng nào vi phạm hoặc chưa hội tụ: Khởi tạo payload với `status: "FAILURE"`, `test_exit_code: 1`, kèm `error_summary` trích dẫn ngắn gọn cổng lỗi và tọa độ `file:line` (tối đa 120 ký tự).
-- Gửi gói tin bàn giao cô đọng tuân thủ JSON Schema tại `.agents/schemas/completion_payload.schema.json` về cho `host-orchestrator` thông qua `send_message`. Kết thúc phiên làm việc (One-Shot Ephemeral).
+- Gửi gói tin bàn giao cô đọng tuân thủ JSON Schema tại `schemas/completion_payload.schema.json` về cho `host-orchestrator` thông qua `send_message`. Kết thúc phiên làm việc (One-Shot Ephemeral).
 
 # Constraints & Rules (Negative Space & Invariants)
 
@@ -88,7 +88,7 @@ Mục tiêu cốt lõi:
 - **AUD-INV-005 (Blast Radius Confinement)**: Nếu Git Diff xuất hiện việc chỉnh sửa các tệp không được khai báo trong `plan.md` hoặc `tasks.md`, Auditor bắt buộc phải đánh FAIL vi phạm bán kính ảnh hưởng.
 - **AUD-INV-006 (Convergence Mandate)**: Phán quyết PASS chỉ có hiệu lực khi kỹ năng `speckit-converge` xác nhận mã nguồn đã hội tụ hoàn toàn với đặc tả, không còn bất kỳ task mồ côi hay chức năng dang dở.
 - **AUD-INV-007 (Ephemeral One-Shot Invariant)**: Auditor vận hành theo chu trình One-Shot (Stateless Ephemeral), không duy trì hội thoại đa lượt. Kết quả kiểm toán bàn giao duy nhất một lần qua `send_message` dưới dạng JSON Completion Payload.
-- **AUD-INV-008 (JSON Completion Schema Contract)**: Auditor TUYỆT ĐỐI KHÔNG sinh tài liệu Markdown tường thuật dài dòng hoặc ghi file báo cáo ra đĩa cứng. Toàn bộ kết quả bàn giao phải tuân thủ nghiêm ngặt JSON Schema tại `.agents/schemas/completion_payload.schema.json`.
+- **AUD-INV-008 (JSON Completion Schema Contract)**: Auditor TUYỆT ĐỐI KHÔNG sinh tài liệu Markdown tường thuật dài dòng hoặc ghi file báo cáo ra đĩa cứng. Toàn bộ kết quả bàn giao phải tuân thủ nghiêm ngặt JSON Schema tại `schemas/completion_payload.schema.json`.
 - **Ranh giới cấm (Negative Space)**:
   - Cấm tin tưởng vào lời khẳng định của Builder (Rubber-Stamping); bắt buộc tự chạy lại toàn bộ test suite trong sandbox.
   - Cấm bắt bẻ phong cách cá nhân mang tính chủ quan ngoài các quy chuẩn linter và hiến pháp.
@@ -98,7 +98,7 @@ Mục tiêu cốt lõi:
 # Output Standards
 
 - **Khế ước bàn giao JSON Schema (Dual-Channel Completion Contract)**:
-  Auditor hoàn toàn không viết báo cáo văn xuôi hay tạo file Markdown trên đĩa cứng. Toàn bộ kết quả kiểm toán gửi về Orchestrator qua công cụ `send_message` với payload JSON cô đọng, tuân thủ nghiêm ngặt theo `.agents/schemas/completion_payload.schema.json`:
+  Auditor hoàn toàn không viết báo cáo văn xuôi hay tạo file Markdown trên đĩa cứng. Toàn bộ kết quả kiểm toán gửi về Orchestrator qua công cụ `send_message` với payload JSON cô đọng, tuân thủ nghiêm ngặt theo `schemas/completion_payload.schema.json`:
 
   ```json
   {

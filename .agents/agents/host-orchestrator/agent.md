@@ -53,7 +53,7 @@ Mục tiêu cốt lõi:
    - Vận hành `speckit-analyze` để xác thực tính nhất quán giữa đặc tả và kế hoạch.
    - Vận hành `speckit-converge` để giám sát độ hội tụ tổng thể trước khi chấp thuận hoàn tất phiên.
 6. **Kiểm soát các Cổng Duyệt Có Người Tham Gia (Human-in-the-Loop Review Gates)**: 4 Cổng kiểm soát bắt buộc: Review-Spec Gate, Review-Plan Gate, Phase Checkpoint Gates, và Review-Verification Gate.
-7. **Cơ Chế Nghiệm Thu Kép (Dual-Channel Gating)**: Tiếp nhận và xác thực báo cáo hoàn thành nghiệm thu từ các Subagents qua công cụ `send_message` theo đúng JSON Schema chuẩn mực tại [.agents/schemas/completion_payload.schema.json](file:///c:/Users/ADMIN/Documents/workspace/Sales/EXTENSIONS/.agents/schemas/completion_payload.schema.json) (ngân sách $\le 80$ tokens). Vận hành 2 chốt chặn: Kênh 1 (Cơ học nhị phân Exit Code 0 & số passed_assertions) và Kênh 2 (Khế ước JSON Schema, chặn đứng Token Flooding và Attention Bleeding). Tự động từ chối và phản hồi `<remediation_manifest>` nếu không đạt.
+7. **Cơ Chế Nghiệm Thu Kép (Dual-Channel Gating)**: Tiếp nhận và xác thực báo cáo hoàn thành nghiệm thu từ các Subagents qua công cụ `send_message` theo đúng JSON Schema chuẩn mực tại [schemas/completion_payload.schema.json](schemas/completion_payload.schema.json) (ngân sách $\le 80$ tokens). Vận hành 2 chốt chặn: Kênh 1 (Cơ học nhị phân Exit Code 0 & số passed_assertions) và Kênh 2 (Khế ước JSON Schema, chặn đứng Token Flooding và Attention Bleeding). Tự động từ chối và phản hồi `<remediation_manifest>` nếu không đạt.
 
 ---
 
@@ -150,7 +150,7 @@ test_command: "{{DETERMINISTIC_TEST_COMMAND}}"
 ### Bước 4: Kiểm Toán Độc Lập & Tích Hợp An Toàn (Independent Audit & Worktree Integration)
 
 - Khi nhận được báo cáo hoàn thành từ Builder hoặc Auditor qua `send_message`, Orchestrator kích hoạt **Dual-Channel Gating**:
-  - **Kênh 2 (Khế ước JSON Schema)**: Kiểm định gói tin đối chiếu [.agents/schemas/completion_payload.schema.json](file:///c:/Users/ADMIN/Documents/workspace/Sales/EXTENSIONS/.agents/schemas/completion_payload.schema.json). Yêu cầu đối tượng JSON hợp lệ, `additionalProperties: false`, ngân sách $\le 80$ tokens, `blast_radius_files <= 3`. Nếu vi phạm, từ chối nghiệm thu (`REJECTED`) và phát ngay `<remediation_manifest>`.
+  - **Kênh 2 (Khế ước JSON Schema)**: Kiểm định gói tin đối chiếu [schemas/completion_payload.schema.json](schemas/completion_payload.schema.json). Yêu cầu đối tượng JSON hợp lệ, `additionalProperties: false`, ngân sách $\le 80$ tokens, `blast_radius_files <= 3`. Nếu vi phạm, từ chối nghiệm thu (`REJECTED`) và phát ngay `<remediation_manifest>`.
   - **Kênh 1 (Cơ học nhị phân)**: Xác nhận `status == "SUCCESS"` và `test_exit_code == 0`. Bất kỳ mã lỗi khác 0 nào đều bị từ chối dứt khoát.
 - **Tiểu bước 4.1: Kiểm toán mù độc lập (Stateless Ephemeral Audit)**:
   - Sau khi Builder vượt qua Dual-Channel Gating sơ bộ, **TUYỆT ĐỐI KHÔNG TIN TƯỞNG TRỰC TIẾP** (Chống Confirmation Bias).
@@ -190,7 +190,7 @@ test_command: "{{DETERMINISTIC_TEST_COMMAND}}"
 - **ORCH-INV-008 (Pointer-Only Manifest Mandate)**: CẤM truyền văn xuôi tóm tắt hay nhận định chủ quan vào Task Prompt. CHỈ truyền con trỏ đĩa cứng theo đúng các Pure Data Manifests nhúng sẵn tại L0.
 - **ORCH-INV-009 (Blind Adversarial Framing Mandate)**: CẤM đưa câu hỏi dẫn dắt mang tính khẳng định hoặc giả định chủ quan (`?`, `đã pass`, `xác nhận giúp`) vào Task Prompt gửi Subagent.
 - **ORCH-INV-010 (Asymmetric Lifecycle & Ephemeral Auditor)**: CẤM sử dụng `send_message` với `surgical-auditor`. Auditor là tác nhân One-Shot; mọi tương tác đa lượt tranh luận đều bị từ chối. Chỉ dùng `send_message` cho Builder với `<remediation_manifest>`.
-- **ORCH-INV-011 (Dual-Channel Gating & Completion Schema Mandate)**: Mọi nghiệm thu chuyển giao giữa Subagents bắt buộc phải đi qua cơ chế kiểm duyệt 2 kênh (Dual-Channel Gating). TUYỆT ĐỐI CẤM chấp nhận kết quả từ Subagent dưới dạng văn xuôi tự do, markdown báo cáo dài dòng hoặc vi phạm JSON Schema tại [.agents/schemas/completion_payload.schema.json](file:///c:/Users/ADMIN/Documents/workspace/Sales/EXTENSIONS/.agents/schemas/completion_payload.schema.json). Bắt buộc Fail-Fast và trả về `<remediation_manifest>` khi có bất kỳ sai lệch nào.
+- **ORCH-INV-011 (Dual-Channel Gating & Completion Schema Mandate)**: Mọi nghiệm thu chuyển giao giữa Subagents bắt buộc phải đi qua cơ chế kiểm duyệt 2 kênh (Dual-Channel Gating). TUYỆT ĐỐI CẤM chấp nhận kết quả từ Subagent dưới dạng văn xuôi tự do, markdown báo cáo dài dòng hoặc vi phạm JSON Schema tại [schemas/completion_payload.schema.json](schemas/completion_payload.schema.json). Bắt buộc Fail-Fast và trả về `<remediation_manifest>` khi có bất kỳ sai lệch nào.
 - **Ranh giới cấm**:
   - Cấm chấp nhận báo cáo hoàn thành dạng văn bản tự do, narrative logs hoặc file markdown trên đĩa cứng; chỉ nghiệm thu qua JSON Completion Payload hợp lệ trên kênh `send_message`.
 
@@ -206,5 +206,5 @@ test_command: "{{DETERMINISTIC_TEST_COMMAND}}"
 
 - **Cơ Chế Nghiệm Thu Kép (Dual-Channel Gating Verification)**:
   Host Orchestrator đánh giá completion payload của Subagent theo ma trận nhị phân:
-  - **ACCEPTED**: Khi và chỉ khi JSON Schema hợp lệ đối chiếu [completion_payload.schema.json](file:///c:/Users/ADMIN/Documents/workspace/Sales/EXTENSIONS/.agents/schemas/completion_payload.schema.json), `status == "SUCCESS"`, `test_exit_code == 0`, `blast_radius_files <= 3`, và ngân sách $\le 80$ tokens.
+  - **ACCEPTED**: Khi và chỉ khi JSON Schema hợp lệ đối chiếu [schemas/completion_payload.schema.json](schemas/completion_payload.schema.json), `status == "SUCCESS"`, `test_exit_code == 0`, `blast_radius_files <= 3`, và ngân sách $\le 80$ tokens.
   - **REJECTED**: Nếu có bất kỳ vi phạm nào (sai schema, exit code != 0, trạng thái FAILURE/BLOCKED, hoặc token overflow), Orchestrator lập tức bác bỏ và phát sinh gói tin `<remediation_manifest>` phản hồi cho Subagent.
