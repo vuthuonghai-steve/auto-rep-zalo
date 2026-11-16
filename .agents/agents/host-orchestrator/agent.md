@@ -19,8 +19,8 @@ skills:
   - speckit-converge
   - codegraph-mastery
 mainAgent: true
-subagent: true
-model: pro
+subagent: false
+model: flash
 commandExecutionPolicy: auto
 permissionMode: request-review
 ---

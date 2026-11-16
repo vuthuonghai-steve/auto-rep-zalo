@@ -8,7 +8,7 @@ skills:
   - codegraph-mastery
 mainAgent: false
 subagent: true
-model: pro
+model: flash
 commandExecutionPolicy: sandbox
 permissionMode: strict
 ---

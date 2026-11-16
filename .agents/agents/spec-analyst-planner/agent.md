@@ -20,7 +20,7 @@ skills:
   - ai-first-doc-formatter
 mainAgent: false
 subagent: true
-model: pro
+model: flash
 commandExecutionPolicy: auto
 permissionMode: request-review
 ---
