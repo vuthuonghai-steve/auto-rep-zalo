@@ -1,5 +1,5 @@
 {
-  "composite-domain-dispatcher": {
+  "delegation-sanitizer-guard": {
     "enabled": true,
     "PreToolUse": [
       {
@@ -7,14 +7,14 @@
         "hooks": [
           {
             "type": "command",
-            "command": "powershell -ExecutionPolicy Bypass -File scripts/guards/dispatcher.ps1 --event PreToolUse",
+            "command": "python scripts/guards/domains/engine_invariants/delegation_sanitizer.py",
             "timeout": 5
           }
         ]
       }
     ]
   },
-  "andrew-placeholder-guard": {
+  "workspace-safety-guard": {
     "enabled": true,
     "PostToolUse": [
       {
@@ -22,49 +22,19 @@
         "hooks": [
           {
             "type": "command",
-            "command": "powershell -ExecutionPolicy Bypass -File scripts/guards/placeholder-guard.ps1",
-            "timeout": 10
+            "command": "python scripts/guards/workspace_guard.py",
+            "timeout": 5
           }
         ]
       }
     ]
   },
-  "andrew-diff-scope-guard": {
-    "enabled": true,
-    "PostToolUse": [
-      {
-        "matcher": "write_file|edit_file",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "powershell -ExecutionPolicy Bypass -File scripts/guards/diff-scope-guard.ps1",
-            "timeout": 10
-          }
-        ]
-      }
-    ]
-  },
-  "andrew-directory-structure-guard": {
-    "enabled": true,
-    "PostToolUse": [
-      {
-        "matcher": "write_file|edit_file",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "powershell -ExecutionPolicy Bypass -File scripts/guards/directory-structure-guard.ps1",
-            "timeout": 10
-          }
-        ]
-      }
-    ]
-  },
-  "andrew-verification-gate": {
+  "verification-gate-guard": {
     "enabled": true,
     "Stop": [
       {
         "type": "command",
-        "command": "powershell -ExecutionPolicy Bypass -File scripts/guards/verification-gate.ps1",
+        "command": "python scripts/guards/verification_gate.py",
         "timeout": 15
       }
     ]
