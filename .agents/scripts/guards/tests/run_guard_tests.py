@@ -124,6 +124,95 @@ def run_latency_benchmarks() -> List[Tuple[str, float, float, float, float, bool
             passed_s,
         ))
 
+        # 3. Benchmark PostToolUse Workspace Guard
+        import workspace_guard
+        clean_post_payload = {
+            "toolCall": {
+                "name": "write_file",
+                "args": {
+                    "Path": "src/features/sample.py",
+                    "Content": "def add(x: int, y: int) -> int:\n    return x + y\n"
+                }
+            }
+        }
+        workspace_guard.handle_post_tool_use(clean_post_payload)
+
+        ws_timings = []
+        for _ in range(100):
+            t0 = time.perf_counter()
+            workspace_guard.handle_post_tool_use(clean_post_payload)
+            ws_timings.append((time.perf_counter() - t0) * 1000.0)
+
+        mean_w = statistics.mean(ws_timings)
+        p95_w = statistics.quantiles(ws_timings, n=20)[18] if len(ws_timings) >= 20 else max(ws_timings)
+        max_w = max(ws_timings)
+        passed_w = mean_w < 25.0
+        benchmark_results.append((
+            "PostToolUse Workspace Guard Latency",
+            mean_w,
+            p95_w,
+            max_w,
+            25.0,
+            passed_w,
+        ))
+
+        # 4. Benchmark Stop Hook Verification Gate
+        import verification_gate
+        import io
+        from unittest.mock import patch
+        stop_payload = {
+            "status": "SUCCESS",
+            "task_id": "T008",
+            "test_exit_code": 0,
+            "passed_assertions": 192,
+        }
+        with patch.object(sys, "stderr", io.StringIO()):
+            verification_gate.handle_stop(stop_payload, check_git_docs=False)
+
+        vg_timings = []
+        with patch.object(sys, "stderr", io.StringIO()):
+            for _ in range(100):
+                t0 = time.perf_counter()
+                verification_gate.handle_stop(stop_payload, check_git_docs=False)
+                vg_timings.append((time.perf_counter() - t0) * 1000.0)
+
+        mean_v = statistics.mean(vg_timings)
+        p95_v = statistics.quantiles(vg_timings, n=20)[18] if len(vg_timings) >= 20 else max(vg_timings)
+        max_v = max(vg_timings)
+        passed_v = mean_v < 15.0
+        benchmark_results.append((
+            "Stop Hook Verification Gate Latency",
+            mean_v,
+            p95_v,
+            max_v,
+            15.0,
+            passed_v,
+        ))
+
+        # 5. Benchmark Hook Utils STDIN Parser & BOM Resolver
+        import hook_utils
+        raw_bom_json = '\ufeff{"event": "PreToolUse", "toolCall": {"name": "read_file"}}'
+        hook_utils.parse_stdin_payload(raw_bom_json)
+
+        hu_timings = []
+        for _ in range(100):
+            t0 = time.perf_counter()
+            hook_utils.parse_stdin_payload(raw_bom_json)
+            hu_timings.append((time.perf_counter() - t0) * 1000.0)
+
+        mean_h = statistics.mean(hu_timings)
+        p95_h = statistics.quantiles(hu_timings, n=20)[18] if len(hu_timings) >= 20 else max(hu_timings)
+        max_h = max(hu_timings)
+        passed_h = mean_h < 5.0
+        benchmark_results.append((
+            "Hook Utils STDIN & BOM Parser Latency",
+            mean_h,
+            p95_h,
+            max_h,
+            5.0,
+            passed_h,
+        ))
+
     except Exception as e:
         print(f"[WARN] Unable to execute micro-benchmarks: {e}")
 
