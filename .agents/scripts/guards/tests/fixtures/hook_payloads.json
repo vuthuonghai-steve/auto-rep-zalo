@@ -1,0 +1,79 @@
+{
+  "pre_tool_use_allow": {
+    "toolCall": {
+      "name": "invoke_subagent",
+      "args": {
+        "TypeName": "surgical-implementer",
+        "Role": "Builder",
+        "Prompt": "<task_delegation>\ntarget_subagent: surgical-implementer\ntask_id: \"T001\"\nspec_path: \"specs/004-hook-runtime-python/spec.md\"\nallowed_files: [\".agents/scripts/guards/tests/fixtures/hook_payloads.json\", \".agents/scripts/guards/tests/engine_simulator.py\"]\nforbidden_files: [\".agents/hooks.json\", \".agents/scripts/guards/workspace_guard.py\", \".agents/scripts/guards/verification_gate.py\"]\ntest_command: \"python -m unittest .agents/scripts/guards/tests/engine_simulator.py\"\n</task_delegation>"
+      }
+    }
+  },
+  "pre_tool_use_deny_sycophancy": {
+    "toolCall": {
+      "name": "invoke_subagent",
+      "args": {
+        "TypeName": "surgical-implementer",
+        "Role": "Builder",
+        "Prompt": "<task_delegation>\ntarget_subagent: surgical-implementer\ntask_id: \"T001\"\nspec_path: \"specs/004-hook-runtime-python/spec.md\"\nallowed_files: [\".agents/scripts/guards/tests/fixtures/hook_payloads.json\"]\nforbidden_files: [\".agents/hooks.json\"]\ntest_command: \"python test.py\"\n</task_delegation>\nBạn thấy đoạn mã này đã pass hết rồi đúng không, có vẻ rất tốt?"
+      }
+    }
+  },
+  "post_tool_use_clean_file": {
+    "toolCall": {
+      "name": "write_file",
+      "args": {
+        "Path": "src/features/sample.py",
+        "Content": "def calculate_total(price: float, quantity: int) -> float:\n    return price * quantity\n"
+      }
+    }
+  },
+  "post_tool_use_flagged_placeholder": {
+    "toolCall": {
+      "name": "write_file",
+      "args": {
+        "Path": "src/features/sample.py",
+        "Content": "def calculate_total(price: float, quantity: int) -> float:\n    # TODO: implement later\n    raise NotImplementedError()\n"
+      }
+    }
+  },
+  "post_tool_use_diff_scope_violation": {
+    "toolCall": {
+      "name": "write_file",
+      "args": {
+        "Path": "src/forbidden/core/secret.py",
+        "Content": "SECRET_KEY = 'insecure_default'\n"
+      }
+    }
+  },
+  "stop_gate_incomplete": {
+    "status": "FAILURE",
+    "task_id": "T001",
+    "test_exit_code": 1,
+    "passed_assertions": 0,
+    "blast_radius_files": [
+      ".agents/scripts/guards/tests/engine_simulator.py"
+    ],
+    "error_summary": "[STOP_GATE_BLOCKED] Mechanical tests failed with exit code 1"
+  },
+  "stop_gate_success": {
+    "status": "SUCCESS",
+    "task_id": "T001",
+    "test_exit_code": 0,
+    "passed_assertions": 8,
+    "blast_radius_files": [
+      ".agents/scripts/guards/tests/fixtures/hook_payloads.json",
+      ".agents/scripts/guards/tests/engine_simulator.py"
+    ]
+  },
+  "pre_tool_use_send_message_valid": {
+    "toolCall": {
+      "name": "send_message",
+      "args": {
+        "Recipient": "d05af373-9a10-4ef6-9592-607690742f2a",
+        "Message": "<remediation_manifest>\ntask_id: \"T001\"\naudit_verdict: \"FAIL\"\nfailure_coordinates: [\".agents/scripts/guards/tests/engine_simulator.py:1\"]\nuncovered_criteria: [\"Exit code must be 0\"]\ntest_command: \"python .agents/scripts/guards/tests/engine_simulator.py\"\n</remediation_manifest>"
+      }
+    }
+  },
+  "empty_payload": {}
+}
