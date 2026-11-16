@@ -6,11 +6,11 @@ tools:
   - run_command
   - send_message
 skills:
-  - skills/speckit-constitution
-  - skills/speckit-checklist
-  - skills/speckit-analyze
-  - skills/speckit-converge
-mainAgent: true
+  - speckit-constitution
+  - speckit-checklist
+  - speckit-analyze
+  - speckit-converge
+mainAgent: false
 subagent: true
 model: pro
 commandExecutionPolicy: auto

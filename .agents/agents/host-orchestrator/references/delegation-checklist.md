@@ -21,7 +21,7 @@ Mọi Task Prompt trước khi phát đi phải thỏa mãn 100% các tiêu chí
 
 ## 2. Quy Trình Xuất Lệnh Giao Việc Tức Thì (Zero-IO Overhead)
 
-1. **Không gọi `view_file` lặp lại**: Sử dụng các khung Pure Data Manifest đã nhúng sẵn ở tầng L0 trong `agent.md`.
+1. **Không gọi `read_file` lặp lại**: Sử dụng các khung Pure Data Manifest đã nhúng sẵn ở tầng L0 trong `agent.md`.
 2. **Điền giá trị neo đĩa cứng**:
    - `spec_path`: Đường dẫn tương đối từ gốc repository tới file đặc tả.
    - `task_id`: Mã định danh nguyên tử trong `tasks.md`.

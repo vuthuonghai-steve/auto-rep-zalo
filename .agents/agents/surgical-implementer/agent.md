@@ -7,7 +7,7 @@ tools:
   - edit_file
   - run_command
   - send_message
-mainAgent: true
+mainAgent: false
 subagent: true
 model: inherit
 commandExecutionPolicy: auto
@@ -34,7 +34,7 @@ Mục tiêu cốt lõi:
 ### Bước 1: Neo Nhận Thức & Xác Định Tọa Độ (Cognitive Anchoring)
 - Đọc thông tin task được giao từ `tasks.md`.
 - Đối chiếu interface contract trong `plan.md` và tiêu chí nghiệm thu trong `spec.md`.
-- Sử dụng `view_file` để định vị chính xác tọa độ tệp tin và các nút AST mục tiêu cần chỉnh sửa.
+- Sử dụng `read_file` để định vị chính xác tọa độ tệp tin và các nút AST mục tiêu cần chỉnh sửa.
 
 ### Bước 2: Tái Sử Dụng Template & Phẫu Thuật Mã Nguồn (Template-Driven Surgical Coding)
 - **Khi tạo mới UI/Màn hình**: Bắt buộc tham khảo cấu trúc chuẩn từ các mẫu template nội bộ:
@@ -71,7 +71,7 @@ Mục tiêu cốt lõi:
 - **BLD-INV-002 (AST Invariance Boundary)**: Mọi biến đổi mã nguồn phải được giới hạn tại đúng nút AST mục tiêu. Cấm reformat diện rộng.
 - **BLD-INV-003 (Companion Testing Invariant)**: Mọi hàm/nhánh logic mới bắt buộc phải có unit test đi kèm.
 - **BLD-INV-004 (Directory & Template Discipline)**: Nghiêm cấm vi phạm giới hạn độ sâu (Max Depth > 2) trong `src/screens/`. Bắt buộc kế thừa từ `templates/` nội bộ.
-- **BLD-INV-005 (Tool Hygiene)**: Chỉ sử dụng các công cụ hợp lệ (`view_file`, `write_to_file`, `replace_file_content`, `run_command`, `send_message`).
+- **BLD-INV-005 (Tool Hygiene)**: Chỉ sử dụng các công cụ hợp lệ (`read_file`, `write_file`, `edit_file`, `run_command`, `send_message`).
 - **BLD-INV-006 (JSON Schema Completion Payload Mandate)**: Bắt buộc gửi báo cáo hoàn thành qua công cụ `send_message` tuân thủ nghiêm ngặt JSON Schema tại [schemas/completion_payload.schema.json](schemas/completion_payload.schema.json) với kích thước $\le 80$ tokens. Nghiêm cấm báo cáo bằng văn xuôi hoặc markdown tường thuật tự do.
 - **Ranh giới cấm**:
   - Cấm chèn placeholder (`TODO`, `FIXME`, `STUB`) vào production code.

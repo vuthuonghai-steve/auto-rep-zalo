@@ -9,16 +9,16 @@ tools:
   - ask_permission
   - search_web
 skills:
-  - skills/speckit-constitution
-  - skills/speckit-specify
-  - skills/speckit-clarify
-  - skills/speckit-checklist
-  - skills/speckit-plan
-  - skills/speckit-tasks
-  - skills/speckit-analyze
-  - skills/codegraph-mastery
-  - skills/ai-first-doc-formatter
-mainAgent: true
+  - speckit-constitution
+  - speckit-specify
+  - speckit-clarify
+  - speckit-checklist
+  - speckit-plan
+  - speckit-tasks
+  - speckit-analyze
+  - codegraph-mastery
+  - ai-first-doc-formatter
+mainAgent: false
 subagent: true
 model: pro
 commandExecutionPolicy: auto

@@ -86,6 +86,17 @@ Nếu làm việc trong monorepo hoặc thư mục hiện tại không có `.cod
   }
   ```
 
+### 3.3. Xử Lý Offloaded Output (`The output was large and was saved to: ...output.txt`)
+Khi kết quả của CodeGraph vượt quá ngưỡng an toàn context của nền tảng (~10KB - 16KB), hệ thống sẽ lưu kết quả ra file đệm `output.txt`.
+
+> [!WARNING]
+> **Bẫy Ngữ Cảnh**: Tuyệt đối **KHÔNG** dùng lệnh `read_file` để đọc tuần tự từng phần của tệp `output.txt` (StartLine 1-200, 200-328...). Việc này vi phạm nghiêm trọng nguyên tắc 1-Call Determinism và làm phình token context.
+
+- **Hành động bắt buộc (Query Narrowing Strategy)**:
+  1. Khi gặp thông báo `output.txt`, điều đó chứng minh query quá rộng (trả về hàng chục file và hàng trăm symbols).
+  2. Lập tức **thu hẹp query**: Chỉ truyền đúng 1-2 symbol then chốt có độ đặc dị cao nhất (ví dụ: thay vì `query: "sidebar observer registry N01SidebarObserverView"`, hãy đổi thành `query: "SidebarObserverScreen router.config.ts"`).
+  3. Lệnh gọi thu hẹp sẽ trả về payload nhỏ (< 5KB), hiển thị mã Verbatim trực tiếp ngay trong turn mà không bị offload.
+
 ---
 
 ## 4. Định Dạng Quy Trình Làm Việc Tiêu Chuẩn Cho Agent
@@ -100,11 +111,13 @@ flowchart TD
     D -- Không --> E[Dùng Grep / Find / Read thông thường]
     D -- Có --> F[Xác định các Symbol / Luồng liên quan]
     F --> G[Gọi DUY NHẤT: codegraph_explore]
-    G --> H{Có cảnh báo Staleness?}
-    H -- Có --> I[Read trực tiếp file bị stale]
-    H -- Không --> J[Phân tích Blast Radius & Source Code trả về]
-    J --> K{Có cảnh báo: no covering tests?}
-    K -- Có --> L[Cảnh báo người dùng & Đề xuất viết test trước]
-    K -- Không --> M[Dùng mã Verbatim thực hiện edit_file trực tiếp]
-    M --> N[Chạy companion test runner xác nhận exit code 0]
+    G --> H{Bị Offload ra output.txt?}
+    H -- Có (Query Quá Rộng) --> H1[Thu Hẹp Query 1-2 Symbol - CẤM đọc lặp output.txt] --> G
+    H -- Không --> I{Có cảnh báo Staleness?}
+    I -- Có --> J[Read trực tiếp file bị stale]
+    I -- Không --> K[Phân tích Blast Radius & Source Code trả về]
+    K --> L{Có cảnh báo: no covering tests?}
+    L -- Có --> M[Cảnh báo người dùng & Đề xuất viết test trước]
+    L -- Không --> N[Dùng mã Verbatim thực hiện edit_file trực tiếp]
+    N --> O[Chạy companion test runner xác nhận exit code 0]
 ```

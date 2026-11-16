@@ -5,7 +5,7 @@ tools:
   - read_file
   - run_command
   - manage_task
-mainAgent: true
+mainAgent: false
 subagent: true
 model: flash
 commandExecutionPolicy: auto

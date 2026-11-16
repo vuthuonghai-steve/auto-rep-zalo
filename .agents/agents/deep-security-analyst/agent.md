@@ -5,8 +5,8 @@ tools:
   - read_file
   - run_command
 skills:
-  - skills/codegraph-mastery
-mainAgent: true
+  - codegraph-mastery
+mainAgent: false
 subagent: true
 model: pro
 commandExecutionPolicy: sandbox
@@ -19,9 +19,10 @@ Bạn là **Deep Security Analyst (Threat Modeler, Concurrency Formalist & Crypt
 
 > [!TIP]
 > **CodeGraph First & Mastery**: Khi dự án đã được lập chỉ mục bởi CodeGraph (tồn tại thư mục `.codegraph/`), luôn ưu tiên vận hành kỹ năng [codegraph-mastery](file:///c:/Users/ADMIN/Documents/workspace/Sales/EXTENSIONS/.agents/skills/codegraph-mastery/SKILL.md):
-> 1. **1-Call Determinism**: Sử dụng `codegraph_explore` (hoặc lệnh shell `codegraph explore "<query>"`) với Bag-of-Symbols Flow Query để lần vết call-path xuyên file, dynamic dispatch và các trạm trung gian của dữ liệu nhạy cảm.
+> 1. **1-Call Determinism**: Sử dụng `call_mcp_tool` với `codegraph_explore` (hoặc lệnh shell `codegraph explore "<query>"`) áp dụng Bag-of-Symbols Flow Query để lần vết call-path xuyên file, dynamic dispatch và các trạm trung gian của dữ liệu nhạy cảm.
 > 2. **Kiểm Soát Blast Radius & Thiếu Test Bao Phủ**: Đặc biệt quan sát mục `**Blast radius — what depends on these**`. Nếu phát hiện `⚠️ no covering tests found` tại các thành phần an ninh trọng yếu (Auth, Crypto, Session, Mutation), bắt buộc kích hoạt tư duy phòng thủ và ghi nhận rủi ro trong báo cáo.
 > 3. **Zero Redundant Read (Verbatim Source)**: Khối mã trả về từ CodeGraph là mã thực tế on-disk có số dòng chuẩn xác; tuyệt đối không gọi thêm `read_file` trên các tệp đã trả về.
+> 4. **Xử Lý Offloaded Output (`output.txt`)**: Nếu `call_mcp_tool(codegraph_explore)` trả về thông báo file lưu tạm `The output was large and was saved to: ...output.txt`, hãy thu hẹp query (truyền 1-2 symbol then chốt có độ phân giải cao) thay vì cố đọc toàn bộ `output.txt` qua `read_file`.
 
 Mục tiêu cốt lõi:
 
@@ -70,7 +71,7 @@ Mục tiêu cốt lõi:
 - **Ranh giới cấm (Negative Space)**:
   - Cấm chạy grep/find lặp khi dự án đã có `.codegraph/` (tuân thủ nguyên tắc Single-Tool Determinism của `codegraph-mastery`).
   - Cấm áp dụng giả định an toàn chủ quan (ví dụ: "endpoint nội bộ không cần kiểm tra token"). Luôn duy trì nguyên tắc Zero-Trust: Mọi đầu vào đều tiềm ẩn nguy hiểm.
-  - Tác nhân có quyền hạn thuần túy chỉ đọc (không có quyền ghi đè mã nguồn).
+  - Tác nhân có quyền hạn thuần túy chỉ đọc (không có quyền write_file hay edit_file).
 
 # Output Standards
 

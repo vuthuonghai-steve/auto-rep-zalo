@@ -3,9 +3,13 @@ name: worktree-integrator
 description: Subagent chuyên trách kiểm tra tính toàn vẹn Git, thực hiện merge an toàn từ worktree của subagent vào nhánh chính, chạy regression test tích hợp và thu hồi worktree sạch sẽ.
 tools:
   - read_file
+  - write_file
+  - edit_file
   - run_command
   - send_message
-mainAgent: true
+skills:
+  - clean-worktree
+mainAgent: false
 subagent: true
 model: inherit
 commandExecutionPolicy: auto

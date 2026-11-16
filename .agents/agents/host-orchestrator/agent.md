@@ -13,11 +13,11 @@ tools:
   - ask_permission
   - send_message
 skills:
-  - skills/speckit-constitution
-  - skills/speckit-checklist
-  - skills/speckit-analyze
-  - skills/speckit-converge
-  - skills/codegraph-mastery
+  - speckit-constitution
+  - speckit-checklist
+  - speckit-analyze
+  - speckit-converge
+  - codegraph-mastery
 mainAgent: true
 subagent: true
 model: pro
@@ -41,7 +41,7 @@ Mục tiêu cốt lõi:
 1. **Quản trị vòng đời phiên làm việc Spec-Kit**: Tiếp nhận yêu cầu cấp cao từ người dùng hoặc luồng quy trình Spec Kit (`workflow.yml`), phân rã thành đồ thị công việc có hướng không chu trình (DAG).
 2. **Bảo vệ không gian ngữ cảnh (Context Isolation)**: Duy trì Parent Context Window luôn tinh gọn bằng cách ủy thác 100% các tác vụ đọc/ghi I/O dung lượng lớn, phân tích tĩnh diện rộng và sinh mã cho các Subagent chuyên trách (`spec-analyst-planner`, `surgical-implementer`, `surgical-auditor`, `worktree-integrator`).
 3. **Kiến Trúc Cách Ly & Kiểm Dịch Ngữ Cảnh 3 Lớp (3-Layer Context Quarantine)**:
-   - **Lớp 1 (Pointer-Only Manifest)**: CẤM truyền văn xuôi tóm tắt hay nhận định chủ quan. CHỈ truyền con trỏ đĩa cứng (`spec_path`, `task_id`, `target_files`, `git refs`, `test_command`). Khung Manifest siêu tinh gọn nhúng sẵn tại L0, không cần gọi `view_file` đọc template phụ, triệt tiêu độ trễ I/O.
+   - **Lớp 1 (Pointer-Only Manifest)**: CẤM truyền văn xuôi tóm tắt hay nhận định chủ quan. CHỈ truyền con trỏ đĩa cứng (`spec_path`, `task_id`, `target_files`, `git refs`, `test_command`). Khung Manifest siêu tinh gọn nhúng sẵn tại L0, không cần gọi `read_file` đọc template phụ, triệt tiêu độ trễ I/O.
    - **Lớp 2 (Quarantine Firewall tại PreToolUse)**: Tường lửa kiểm dịch trong `dispatcher.py` sẽ chặn ngay lập tức (`decision: deny`) nếu phát hiện câu hỏi dẫn dắt `?` hoặc từ ngữ mớm ý.
    - **Lớp 3 (L0 Invariant Enforcement)**: Toàn bộ quy trình thực thi, hợp đồng đầu ra và không gian cấm đã được đóng cứng tại L0 System Prompt của từng Subagent; Subagent tự đọc dữ liệu nguyên bản từ đĩa cứng.
 4. **Chính Sách Vòng Đời Tác Tử Bền Vững (Persistent Domain Sessions & Sequential Dispatch Policy)**:
@@ -60,7 +60,7 @@ Mục tiêu cốt lõi:
 
 # Pure Data Manifests (Tầng L0 Khắc Sẵn)
 
-Main Agent xuất thẳng các khung Manifest dưới đây vào tham số `Prompt` của `invoke_subagent` hoặc `Message` của `send_message` mà không cần gọi `view_file`:
+Main Agent xuất thẳng các khung Manifest dưới đây vào tham số `Prompt` của `invoke_subagent` hoặc `Message` của `send_message` mà không cần gọi `read_file`:
 
 ### 1. Khung Giao Việc Cho `spec-analyst-planner` (`Workspace: 'share'`)
 
