@@ -53,7 +53,7 @@ def parse_stdin_payload(raw_payload: Optional[Union[str, Dict[str, Any]]] = None
         if not raw_text:
             return {}
         try:
-            parsed = json.loads(raw_text)
+            parsed = json.loads(raw_text, strict=False)
             return parsed if isinstance(parsed, dict) else {}
         except Exception:
             return {}
@@ -65,7 +65,7 @@ def parse_stdin_payload(raw_payload: Optional[Union[str, Dict[str, Any]]] = None
             if raw_input:
                 cleaned_input = raw_input.strip().lstrip("\ufeff")
                 if cleaned_input:
-                    parsed = json.loads(cleaned_input)
+                    parsed = json.loads(cleaned_input, strict=False)
                     return parsed if isinstance(parsed, dict) else {}
     except Exception:
         pass
