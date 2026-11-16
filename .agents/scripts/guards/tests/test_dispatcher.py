@@ -111,8 +111,21 @@ test_command: "bun test"
         result = handle_pre_tool_use(payload)
         self.assertEqual(result.get("decision"), "allow")
 
-    def test_deny_send_message_to_ephemeral_auditor(self):
-        """Kịch bản AC-03: send_message gửi tới surgical-auditor bị chặn dứt khoát."""
+    def test_deny_free_form_send_message_to_auditor(self):
+        """Kịch bản AC-03: send_message văn bản tự do gửi tới surgical-auditor bị chặn dứt khoát."""
+        payload = {
+            "name": "send_message",
+            "args": {
+                "Recipient": "subagent-surgical-auditor-1234",
+                "Message": "Kiểm tra lại giúp tôi task T005 nhé"
+            }
+        }
+        result = handle_pre_tool_use(payload)
+        self.assertEqual(result.get("decision"), "deny")
+        self.assertIn("AUDITOR_FREE_FORM_PROHIBITED", result.get("reason", ""))
+
+    def test_allow_structured_re_audit_to_auditor(self):
+        """Kịch bản AC-03b: send_message có cấu trúc <remediation_manifest> gửi tới auditor được phép."""
         payload = {
             "name": "send_message",
             "args": {
@@ -121,8 +134,7 @@ test_command: "bun test"
             }
         }
         result = handle_pre_tool_use(payload)
-        self.assertEqual(result.get("decision"), "deny")
-        self.assertIn("AUDITOR_IS_EPHEMERAL", result.get("reason", ""))
+        self.assertEqual(result.get("decision"), "allow")
 
     def test_deny_sycophancy_bait_in_invoke(self):
         """Kịch bản AC-03: invoke_subagent chứa câu hỏi dẫn dắt hoặc khẳng định bị chặn."""

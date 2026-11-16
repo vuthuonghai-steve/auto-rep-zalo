@@ -67,7 +67,7 @@ Bộ Harness hiện tại đã trải qua nhiều vòng tinh chỉnh chuyên sâ
 - **Gói Tác Tử Điều Phối**: `.agents/agents/host-orchestrator/agent.md` (Self-contained package kèm thư mục `references/` kiểm soát checklist ủy thác và phân rã đồ thị DAG).
 - **Gói Tác Tử Thực Thi**: `.agents/agents/surgical-implementer/agent.md` (Self-contained package kèm `templates/` 3 tầng và `references/pre-completion-checklist.md`).
 - **Tác Tử Kiểm Toán**: `.agents/agents/surgical-auditor.md` (Kiểm toán độc lập 4 cổng cơ học nhị phân, triệt tiêu thiên kiến xác nhận).
-- **Hệ Thống Hooks Giữ Nguyên**: `.agents/hooks.json` vận hành ổn định bộ 3 guard PowerShell (`placeholder-guard.ps1`, `diff-scope-guard.ps1`, `directory-structure-guard.ps1`) và `dispatcher.ps1`. **Bảo toàn 100% cấu trúc hook này, không tiến hành hợp nhất làm tăng độ phức tạp rủi ro.**
+- **Hệ Thống Hooks Modular**: `.agents/hooks.json` vận hành theo kiến trúc hook phân tách độc lập (Modular Hooks). **Thống nhất chuẩn hóa chuyển đổi runner sang Python trực tiếp để loại bỏ gánh nặng khởi chạy của PowerShell trên Windows, đồng thời duy trì tính phân tách modular của từng hook (chưa tiến hành hợp nhất monolithic làm một nhằm triệt tiêu rủi ro).**
 
 ### 1.2. Mổ Xẻ Hai Mặt Của Kỹ Thuật "Context Forking"
 Kỹ thuật `swarm(fork: "<member>")` của Engine Go (`agy.exe`) là con dao hai lưỡi:
@@ -241,7 +241,7 @@ verification_gate:
   expected_exit_code: 0
 acceptance_criteria:
   - "Tài liệu tuân thủ tuyệt đối cấu trúc AI-First Triad (instructions, context, output_contract)."
-  - "Bảo tồn 100% các hook hiện hữu, loại bỏ hoàn toàn đề xuất gộp hook PowerShell sang Python."
+  - "Thống nhất chuẩn hóa runner sang Python trực tiếp trên Windows và duy trì tính phân tách modular của các hooks."
   - "Xác định rõ ràng cơ chế Single Initial Fork tại Phase 1 và tái sử dụng Worker In-Live."
   - "Thiết lập quy trình Test-First Gating trước khi giao việc cho surgical-implementer."
   - "Quy định bắt buộc chạy Antigravity Headless Mode và kiểm tra Log-First Verification."

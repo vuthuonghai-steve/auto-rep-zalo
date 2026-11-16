@@ -76,8 +76,8 @@ test_command: "bun test"
         self.assertTrue(ok)
         self.assertEqual(reason, "OK")
 
-    def test_deny_send_message_to_auditor_case_insensitive(self):
-        """CẤM send_message tới surgical-auditor dưới mọi biến thể viết hoa/thường."""
+    def test_deny_free_form_send_message_to_auditor_case_insensitive(self):
+        """CẤM gửi văn bản tự do tới surgical-auditor dưới mọi biến thể viết hoa/thường."""
         recipients = [
             "surgical-auditor-session-1",
             "Surgical-Auditor-2",
@@ -88,11 +88,21 @@ test_command: "bun test"
             with self.subTest(recipient=recipient):
                 payload = {
                     "Recipient": recipient,
-                    "Message": "<remediation_manifest>\ntask_id: \"TSK-01\"\n</remediation_manifest>"
+                    "Message": "Hãy kiểm tra lại giúp tôi task TSK-01 xem đã pass chưa"
                 }
                 ok, reason = verify_delegation_payload("send_message", payload)
                 self.assertFalse(ok)
-                self.assertIn("AUDITOR_IS_EPHEMERAL", reason)
+                self.assertIn("AUDITOR_FREE_FORM_PROHIBITED", reason)
+
+    def test_allow_structured_send_message_to_auditor_re_audit(self):
+        """Cho phép gửi <remediation_manifest> tới surgical-auditor để tái thẩm định (Stateful Session)."""
+        payload = {
+            "Recipient": "surgical-auditor-session-1",
+            "Message": "<remediation_manifest>\ntask_id: \"TSK-01\"\naudit_verdict: \"FIXED\"\ntest_command: \"bun test\"\n</remediation_manifest>"
+        }
+        ok, reason = verify_delegation_payload("send_message", payload)
+        self.assertTrue(ok, f"Expected PASS for structured re-audit message to auditor, got: {reason}")
+        self.assertEqual(reason, "OK")
 
     def test_allow_invoke_subagent_targeting_auditor(self):
         """invoke_subagent khởi tạo session auditor mới với manifest hợp lệ được phép."""

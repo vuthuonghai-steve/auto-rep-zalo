@@ -11,7 +11,7 @@ Mọi Task Prompt trước khi phát đi phải thỏa mãn 100% các tiêu chí
 | Mã Tiêu Chí | Tên Tiêu Chí | Định Nghĩa Cơ Học | Tiêu Chuẩn Đạt (Pass) |
 | :--- | :--- | :--- | :--- |
 | **CRIT-DEL-01** | **Cách Ly Ngữ Cảnh Tuyệt Đối (Clean Slate Isolation)** | Không truyền tóm tắt văn xuôi; chỉ truyền con trỏ đĩa cứng và git refs. | 0 dòng văn bản diễn giải chủ quan. |
-| **CRIT-DEL-02** | **Khung Độc Lập Đối Kháng (Blind Adversarial Framing)** | Cấm mọi câu hỏi mớm ý hoặc giả định khẳng định; cấm `send_message` tới Auditor. | 0 câu hỏi `?`, 0 từ ngữ mớm ý. |
+| **CRIT-DEL-02** | **Khung Độc Lập Đối Kháng (Blind Adversarial Framing)** | Cấm mọi câu hỏi mớm ý hoặc giả định khẳng định; cấm gửi văn xuôi tự do/tranh luận tới Auditor. | 0 câu hỏi `?`, 0 từ ngữ mớm ý. |
 | **CRIT-DEL-03** | **Bán Kính Tác Động Tường Minh (Explicit Blast Radius)** | Khai báo danh mục tệp được phép sửa và tệp bất khả xâm phạm. | Liệt kê rõ `allowed_files` và `forbidden_files`. |
 | **CRIT-DEL-04** | **Điều Kiện Dừng Nhị Phân (Binary Stop Condition)** | Tiêu chuẩn hoàn thành phải đo lường được bằng câu lệnh máy cụ thể. | Có chuỗi lệnh kiểm chứng (`test_command`). |
 | **CRIT-DEL-05** | **Khế Ước Đầu Ra Cấu Trúc (Structured Output Contract)** | Ép buộc Subagent phản hồi theo JSON Schema hoặc Triad Envelope. | 100% phản hồi có schema cấu trúc. |
@@ -29,17 +29,21 @@ Mọi Task Prompt trước khi phát đi phải thỏa mãn 100% các tiêu chí
    - `test_command`: Lệnh chạy test runner độc lập.
 3. **Phát lệnh qua `invoke_subagent`**:
    - `spec-analyst-planner`: `Workspace: 'share'`
-   - `surgical-implementer`: `Workspace: 'branch'`
+   - `surgical-implementer`: `Workspace: 'inherit'` (chỉ dùng `'branch'` khi phân tách song song không giao thoa)
    - `surgical-auditor`: `Workspace: 'inherit'`
-   - `worktree-integrator`: `Workspace: 'inherit'`
+   - `worktree-integrator`: `Workspace: 'inherit'` (chỉ dùng khi giải quyết conflict phức tạp)
 
 ---
 
-## 3. Chính Sách Vòng Đời Bất Đối Xứng (Asymmetric Lifecycle Policy)
+## 3. Chính Sách Vòng Đời Tác Tử Bền Vững (Persistent Domain Sessions Policy)
 
-- **Với `surgical-auditor` (Stateless Ephemeral)**:
-  - **CẤM TUYỆT ĐỐI** dùng `send_message` với Auditor. Mọi tranh luận sau phán quyết đều bị Dispatcher chặn đứng (`decision: deny`).
-  - Nếu Auditor báo `FAIL`: Lấy JSON kết quả chuyển sang cho Builder sửa qua `send_message`, sau đó triệu hồi một Auditor mới tinh qua `invoke_subagent`.
-- **Với `surgical-implementer` (Stateful)**:
-  - Cho phép dùng `send_message` khi khắc phục lỗi sau kiểm toán.
-  - Nội dung tin nhắn bắt buộc phải tuân theo khung `<remediation_manifest>` chỉ chứa tọa độ lỗi (`failure_coordinates`, `uncovered_criteria`), cấm kèm theo văn xuôi phỏng đoán cách sửa.
+- **Với `surgical-implementer` (Stateful Persistent Session)**:
+  - Khởi tạo 1 lần duy nhất cho toàn bộ chuỗi task của Feature.
+  - Sử dụng `send_message` chuyển giao liên hoàn từng task tiếp theo đóng gói trong `<task_delegation>`.
+  - Khi khắc phục lỗi sau kiểm toán, sử dụng `send_message` đóng gói trong khung `<remediation_manifest>` chỉ chứa tọa độ lỗi (`failure_coordinates`, `uncovered_criteria`), cấm kèm theo văn xuôi phỏng đoán cách sửa.
+  - TUYỆT ĐỐI CẤM kill và tạo mới subagent giữa các task trong cùng miền nghiệp vụ.
+- **Với `surgical-auditor` (Stateful Verification Session)**:
+  - Khởi tạo 1 lần duy nhất cho toàn bộ feature.
+  - Tiếp nhận nhiệm vụ kiểm toán task mới hoặc tái thẩm định (re-audit) sau khi Builder vá lỗi qua `send_message` đóng gói trong `<task_delegation>` hoặc `<remediation_manifest>`.
+  - CẤM gửi văn xuôi tự do, câu hỏi dẫn dắt hoặc tranh luận mớm ý với Auditor. Mọi gói tin gửi Auditor bắt buộc phải là con trỏ đĩa cứng nguyên bản.
+  - CẤM tiêu diệt và tạo mới Auditor sau mỗi vòng lặp vá lỗi (triệt tiêu invocation churn).

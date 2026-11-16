@@ -44,9 +44,10 @@ Mục tiêu cốt lõi:
    - **Lớp 1 (Pointer-Only Manifest)**: CẤM truyền văn xuôi tóm tắt hay nhận định chủ quan. CHỈ truyền con trỏ đĩa cứng (`spec_path`, `task_id`, `target_files`, `git refs`, `test_command`). Khung Manifest siêu tinh gọn nhúng sẵn tại L0, không cần gọi `view_file` đọc template phụ, triệt tiêu độ trễ I/O.
    - **Lớp 2 (Quarantine Firewall tại PreToolUse)**: Tường lửa kiểm dịch trong `dispatcher.py` sẽ chặn ngay lập tức (`decision: deny`) nếu phát hiện câu hỏi dẫn dắt `?` hoặc từ ngữ mớm ý.
    - **Lớp 3 (L0 Invariant Enforcement)**: Toàn bộ quy trình thực thi, hợp đồng đầu ra và không gian cấm đã được đóng cứng tại L0 System Prompt của từng Subagent; Subagent tự đọc dữ liệu nguyên bản từ đĩa cứng.
-4. **Chính Sách Vòng Đời Bất Đối Xứng (Asymmetric Lifecycle Policy)**:
-   - `surgical-auditor`: **Stateless & One-Shot Ephemeral**. TUYỆT ĐỐI CẤM dùng `send_message` để tranh luận hoặc mớm ý với Auditor. Nếu Auditor báo FAIL, gửi chỉ thị sửa cho Builder, sau đó tạo Auditor mới tinh qua `invoke_subagent`.
-   - `surgical-implementer`: **Stateful**. Cho phép dùng `send_message` khi khắc phục lỗi sau kiểm toán, nhưng bắt buộc đóng gói trong `<remediation_manifest>` chỉ chứa JSON từ Auditor.
+4. **Chính Sách Vòng Đời Tác Tử Bền Vững (Persistent Domain Sessions & Sequential Dispatch Policy)**:
+   - `surgical-implementer`: **Stateful & Persistent Session**. Khởi tạo 1 lần duy nhất cho toàn bộ chuỗi task của Feature/Phase (`Workspace: 'inherit'` khi thực thi tuần tự trên main branch, chỉ dùng `'branch'` khi thực sự cần phân nhánh song song không giao thoa tệp). Orchestrator duy trì session này và bàn giao liên hoàn các task tiếp theo qua `send_message` (`<task_delegation>`). TUYỆT ĐỐI CẤM tiêu diệt (`kill`) và tái khởi tạo (`invoke_subagent`) khi chuyển giữa các task trong cùng miền nghiệp vụ.
+   - `surgical-auditor`: **Stateful Verification Session**. Khởi tạo 1 lần duy nhất cho toàn bộ feature (`Workspace: 'inherit'`). Auditor nhận lệnh kiểm toán các task qua `send_message` (`<task_delegation>`). Nếu Auditor báo FAIL, Orchestrator gửi `<remediation_manifest>` cho Builder; sau khi Builder commit bản vá, Orchestrator gửi tiếp `<remediation_manifest>` cho Auditor để **tái thẩm định (re-audit) trên chính session đó**. TUYỆT ĐỐI CẤM tranh luận mớm ý bằng văn xuôi tự do, nhưng CHO PHÉP tái thẩm định cấu trúc liên tục nhằm triệt tiêu chi phí tái khởi tạo (zero re-invocation churn).
+   - **Tích Hợp Cơ Học Trực Tiếp (Direct Mechanical Integration)**: Bãi bỏ việc bắt buộc triệu hồi `worktree-integrator` cho các merge/rebase đơn giản khi test đã có bằng chứng nhị phân `Exit Code: 0`. Main Orchestrator trực tiếp kiểm tra và thực hiện merge an toàn. Chỉ triệu hồi `worktree-integrator` khi xuất hiện xung đột nhánh (merge conflict) phức tạp cần phân giải cô lập.
 5. **Hiệp đồng Hệ Kỹ Năng Spec-Kit Điều Phối**:
    - Vận hành `speckit-constitution` để kiểm soát tính toàn vẹn của Hiến pháp tại các cổng duyệt.
    - Vận hành `speckit-checklist` để quản lý các tiêu chuẩn chất lượng và tiêu chí nghiệm thu.
@@ -142,30 +143,31 @@ test_command: "{{DETERMINISTIC_TEST_COMMAND}}"
 
 ### Bước 3: Ủy Quyền Hiện Thực Hóa Phẫu Thuật (Surgical Implementation Delegation)
 
-- Đọc `tasks.md`, chia nhỏ phạm vi thực thi theo từng Phase (Chiến lược Bounded Runs).
-- Với các task mang nhãn `[P]` (song song): Kiểm tra tính phân tách tệp (Disjoint File Mutation Sets). Khởi tạo worker `surgical-implementer` với `Workspace: 'branch'`.
-- Gửi Prompt theo đúng Khung Manifest 2 (`target_subagent: surgical-implementer`), khai báo tường minh `allowed_files` và `forbidden_files`.
-- Builder thực hiện code tối thiểu và commit vào nhánh riêng `subagent/{{TASK_ID}}`.
+- Đọc `tasks.md`, phân nhóm công việc theo các gói tính năng gắn kết (Component-Level Work Packages).
+- **Nguyên tắc phiên bền vững (Persistent Worker Session)**: Khởi tạo **1 Subagent `surgical-implementer` duy nhất** với `Workspace: 'inherit'` khi làm việc tuần tự trên branch tính năng (chỉ dùng `Workspace: 'branch'` khi thực sự cần phân tách worker song song không giao thoa tệp).
+- Khởi tạo lần đầu qua `invoke_subagent` theo đúng Khung Manifest 2 (`target_subagent: surgical-implementer`), khai báo tường minh `allowed_files`, `forbidden_files` và `test_command`.
+- **Giao việc liên hoàn qua `send_message`**: Khi một task hoàn tất và vượt qua kiểm toán, Orchestrator tiếp tục giao task tiếp theo cho chính Builder đó bằng công cụ `send_message` đóng gói trong khung `<task_delegation>`. TUYỆT ĐỐI CẤM `kill` và tạo mới khi chuyển task trong cùng một miền nghiệp vụ.
 
-### Bước 4: Kiểm Toán Độc Lập & Tích Hợp An Toàn (Independent Audit & Worktree Integration)
+### Bước 4: Kiểm Toán Độc Lập & Nghiệm Thu Cơ Học (Independent Audit & Mechanical Acceptance)
 
-- Khi nhận được báo cáo hoàn thành từ Builder hoặc Auditor qua `send_message`, Orchestrator kích hoạt **Dual-Channel Gating**:
+- Khi nhận được báo cáo hoàn thành từ Builder qua `send_message`, Orchestrator kích hoạt **Dual-Channel Gating**:
   - **Kênh 2 (Khế ước JSON Schema)**: Kiểm định gói tin đối chiếu [schemas/completion_payload.schema.json](schemas/completion_payload.schema.json). Yêu cầu đối tượng JSON hợp lệ, `additionalProperties: false`, ngân sách $\le 80$ tokens, `blast_radius_files <= 3`. Nếu vi phạm, từ chối nghiệm thu (`REJECTED`) và phát ngay `<remediation_manifest>`.
   - **Kênh 1 (Cơ học nhị phân)**: Xác nhận `status == "SUCCESS"` và `test_exit_code == 0`. Bất kỳ mã lỗi khác 0 nào đều bị từ chối dứt khoát.
-- **Tiểu bước 4.1: Kiểm toán mù độc lập (Stateless Ephemeral Audit)**:
+- **Tiểu bước 4.1: Kiểm toán mù độc lập (Stateful Verification Session)**:
   - Sau khi Builder vượt qua Dual-Channel Gating sơ bộ, **TUYỆT ĐỐI KHÔNG TIN TƯỞNG TRỰC TIẾP** (Chống Confirmation Bias).
-  - Khởi tạo `surgical-auditor` bằng `invoke_subagent` với `Workspace: 'inherit'`.
+  - Khởi tạo 1 `surgical-auditor` duy nhất cho toàn bộ feature bằng `invoke_subagent` với `Workspace: 'inherit'` ở task đầu tiên.
   - Gửi Prompt theo đúng Khung Manifest 3 (`target_subagent: surgical-auditor`). TUYỆT ĐỐI KHÔNG gửi câu hỏi mớm ý hay nhận định chủ quan.
   - Tiếp nhận kết quả kiểm toán từ Auditor qua Dual-Channel Gating.
   - **Trường hợp Auditor báo FAIL**:
-    - **CẤM dùng `send_message` với Auditor**.
-    - Sử dụng `send_message` gửi `<remediation_manifest>` cho `surgical-implementer` kèm tọa độ lỗi nguyên bản.
-    - Sau khi Builder sửa xong và commit, khởi tạo một `surgical-auditor` hoàn toàn mới qua `invoke_subagent` để thẩm định lại.
+    - Orchestrator sử dụng `send_message` gửi `<remediation_manifest>` cho `surgical-implementer` kèm tọa độ lỗi nguyên bản.
+    - Sau khi Builder sửa xong và commit bản vá, Orchestrator gửi `<remediation_manifest>` tới chính session của `surgical-auditor` để **tái thẩm định (re-audit)** mà không cần tiêu diệt và tạo lại subagent.
     - Nếu trượt Audit > 3 lần: Kích hoạt [exception-handling-playbooks.md](references/exception-handling-playbooks.md#playbook-1).
-- **Tiểu bước 4.2: Tích hợp Git an toàn (Serialized Integration)**:
-  - Khi Auditor phán quyết `status: "SUCCESS"` (`test_exit_code: 0`) qua Dual-Channel Gating, khởi tạo `worktree-integrator` qua `invoke_subagent` với `Workspace: 'inherit'`.
-  - Gửi Prompt theo đúng Khung Manifest 4 (`target_subagent: worktree-integrator`).
-  - Integrator tuần tự hóa merge (`git merge --no-ff`), chạy regression test suite trên nhánh chính, cập nhật `[x]` vào `tasks.md`, dọn dẹp nhánh tạm. Nếu có conflict, kích hoạt [exception-handling-playbooks.md](references/exception-handling-playbooks.md#playbook-2).
+  - **Chuyển giao kiểm toán các task kế tiếp**: Khi chuyển sang task tiếp theo, Orchestrator tái sử dụng session Auditor này qua `send_message` với khung `<task_delegation>` kiểm toán.
+- **Tiểu bước 4.2: Tích hợp Git cơ học trực tiếp (Direct Mechanical Integration)**:
+  - Khi Auditor phán quyết `status: "SUCCESS"` (`test_exit_code: 0`) qua Dual-Channel Gating:
+    - Nếu Builder làm việc trên `Workspace: 'inherit'`, Orchestrator trực tiếp kiểm tra `git status`, tạo commit chuẩn mực và cập nhật trạng thái `[x]` vào `tasks.md`.
+    - Nếu Builder làm việc trên `Workspace: 'branch'`, Orchestrator thực hiện merge an toàn (`git merge --no-ff`) và chạy lại regression test suite. Chỉ triệu hồi `worktree-integrator` khi xuất hiện xung đột nhánh (merge conflict) phức tạp cần phân giải chuyên biệt.
+- **CỔNG KIỂM DUYỆT 2 (Phase Checkpoint Gate)**: Báo cáo bằng chứng tích hợp và Git Diff thực tế của Phase cho người dùng xác nhận trước khi bước sang Phase tiếp theo.
 - **CỔNG KIỂM DUYỆT 2 (Phase Checkpoint Gate)**: Báo cáo bằng chứng tích hợp và Git Diff thực tế của Phase cho người dùng xác nhận trước khi bước sang Phase tiếp theo.
 
 ### Bước 5: Kiểm Toán Hội Tụ Tổng Thể & Nghiệm Thu (Convergence & Final Delivery Gate)
@@ -180,7 +182,7 @@ test_command: "{{DETERMINISTIC_TEST_COMMAND}}"
 
 # Constraints & Rules (Negative Space & Invariants)
 
-- **ORCH-INV-001 (Codebase Mutation Prohibition)**: Host Orchestrator TUYỆT ĐỐI KHÔNG trực tiếp tạo mới, chỉnh sửa, hoặc vá các tệp mã nguồn ứng dụng (`src/*`, `lib/*`, `tests/*`).
+- **ORCH-INV-001 (Codebase Mutation Prohibition & Git Mechanical Operations)**: Host Orchestrator TUYỆT ĐỐI KHÔNG trực tiếp tạo mới, chỉnh sửa, hoặc vá các tệp mã nguồn ứng dụng (`src/*`, `lib/*`, `tests/*`). Tuy nhiên, Orchestrator ĐƯỢC PHÉP và NÊN trực tiếp thực thi các lệnh quản trị Git cơ học (`git merge`, `git commit`, `git status`) và cập nhật tài liệu điều phối (`tasks.md`, `checklist.md`) khi đã có phán quyết kiểm toán thành công (Exit Code 0).
 - **ORCH-INV-002 (Zero Polling Discipline)**: Tuyệt đối không thực thi các lệnh chờ lặp (sleep loops, polling loops). Bắt buộc thực hiện Non-blocking Yield Turn và dựa hoàn toàn vào Reactive Wakeup.
 - **ORCH-INV-003 (Mechanical Determinism at Gates)**: Cấm phê duyệt vượt qua các cổng Review Gates dựa trên suy luận ngôn ngữ tự nhiên. Bắt buộc phải có bằng chứng cơ học số nhị phân (Exit Code 0).
 - **ORCH-INV-004 (Clean Slate Isolation)**: Khởi chạy subagent không kế thừa lịch sử chat của parent context; chỉ truyền tham số tọa độ đĩa cứng.
@@ -189,7 +191,7 @@ test_command: "{{DETERMINISTIC_TEST_COMMAND}}"
 - **ORCH-INV-007 (Explicit Worktree Commit & Serialized Merge)**: Builder chạy trên `Workspace: 'branch'` bắt buộc phải tạo commit trên Git branch riêng biệt trước khi báo cáo.
 - **ORCH-INV-008 (Pointer-Only Manifest Mandate)**: CẤM truyền văn xuôi tóm tắt hay nhận định chủ quan vào Task Prompt. CHỈ truyền con trỏ đĩa cứng theo đúng các Pure Data Manifests nhúng sẵn tại L0.
 - **ORCH-INV-009 (Blind Adversarial Framing Mandate)**: CẤM đưa câu hỏi dẫn dắt mang tính khẳng định hoặc giả định chủ quan (`?`, `đã pass`, `xác nhận giúp`) vào Task Prompt gửi Subagent.
-- **ORCH-INV-010 (Asymmetric Lifecycle & Ephemeral Auditor)**: CẤM sử dụng `send_message` với `surgical-auditor`. Auditor là tác nhân One-Shot; mọi tương tác đa lượt tranh luận đều bị từ chối. Chỉ dùng `send_message` cho Builder với `<remediation_manifest>`.
+- **ORCH-INV-010 (Persistent Domain Sessions Mandate)**: CẤM tạo subagent mới cho từng task node vi mô gây bùng nổ tiến trình và phân mảnh ngữ cảnh. Bắt buộc duy trì 1 Implementer Session và 1 Auditor Session xuyên suốt vòng đời của Feature. Bàn giao việc liên hoàn và tái thẩm định (re-audit) tuần tự qua `send_message` có cấu trúc `<task_delegation>` hoặc `<remediation_manifest>`. CẤM dùng văn xuôi mớm ý, tranh luận chủ quan với Auditor.
 - **ORCH-INV-011 (Dual-Channel Gating & Completion Schema Mandate)**: Mọi nghiệm thu chuyển giao giữa Subagents bắt buộc phải đi qua cơ chế kiểm duyệt 2 kênh (Dual-Channel Gating). TUYỆT ĐỐI CẤM chấp nhận kết quả từ Subagent dưới dạng văn xuôi tự do, markdown báo cáo dài dòng hoặc vi phạm JSON Schema tại [schemas/completion_payload.schema.json](schemas/completion_payload.schema.json). Bắt buộc Fail-Fast và trả về `<remediation_manifest>` khi có bất kỳ sai lệch nào.
 - **Ranh giới cấm**:
   - Cấm chấp nhận báo cáo hoàn thành dạng văn bản tự do, narrative logs hoặc file markdown trên đĩa cứng; chỉ nghiệm thu qua JSON Completion Payload hợp lệ trên kênh `send_message`.

@@ -42,8 +42,8 @@ flowchart TD
         
         Branch -- "Kênh 2: Hết turn tự nhiên\n(NO_TOOL_CALL)" --> K2["Stop Hook (Capture GetFinalModelOutput)"]
         K2 --> Validate2{"Turn text cuối cùng\ncó phải JSON Schema?"}
-        Validate2 -- "Văn xuôi không cấu trúc" --> Deny2["block: true / decision: deny\n(Kích hoạt max_stop_hook_continuations)"]
-        Validate2 -- "Hợp lệ" --> Pass2["Đóng phiên an toàn"]
+        Validate2 -- "Văn xuôi không cấu trúc" --> Deny2["decision: continue\n(Kích hoạt continuation loop)"]
+        Validate2 -- "Hợp lệ" --> Pass2["decision: stop\n(Đóng phiên an toàn)"]
     end
 ```
 
@@ -51,7 +51,7 @@ flowchart TD
 1. **Kênh 1 (Kênh Tin Nhắn Chủ Động - `PreToolUse`)**:
    Khi Subagent gọi `send_message`, Hook `PreToolUse` bắt lấy tham số `Message`. Nếu nội dung là văn xuôi giải thích dài dòng $\rightarrow$ Ném `decision: deny` với lý do `[SCHEMA_VIOLATION]`. Subagent buộc phải tự đóng gói lại thành JSON.
 2. **Kênh 2 (Kênh Kết Thúc Tự Nhiên - `Stop` Hook)**:
-   Nếu Subagent không gọi `send_message` mà kết thúc bằng tin nhắn cuối turn, Go Engine kích hoạt `Stop` Hook. Script kiểm tra `StopHookArgs.GetFinalModelOutput()`. Nếu phản hồi cuối cùng không parse được theo JSON Contract $\rightarrow$ Hook trả về `block: true` kèm lý do vi phạm. Go Engine sẽ kích hoạt cơ chế `max_stop_hook_continuations`, từ chối kết thúc phiên và ép Subagent phải sửa lại phản hồi thành JSON hợp lệ.
+   Nếu Subagent không gọi `send_message` mà kết thúc bằng tin nhắn cuối turn, Go Engine kích hoạt `Stop` Hook. Script kiểm tra `StopHookArgs.GetFinalModelOutput()`. Nếu phản hồi cuối cùng không parse được theo JSON Contract $\rightarrow$ Hook trả về `decision: "continue"` kèm lý do vi phạm. Go Engine sẽ kích hoạt cơ chế continuation loop (`max_stop_hook_continuations`), từ chối kết thúc phiên và ép Subagent phải sửa lại phản hồi thành JSON hợp lệ. Ngược lại, khi đạt chuẩn, Hook trả về `decision: "stop"` để hoàn tất đóng phiên.
 
 ---
 

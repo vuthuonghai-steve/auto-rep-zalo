@@ -118,8 +118,8 @@ flowchart TD
         Execution --> StopCheck["Tầng 2 (Mechanical Trajectory Gate tại Stop Hook):\nScript tự động quét transcript.jsonl"]
         
         StopCheck --> ToolVerify{"Trong transcript.jsonl có tool_calls\nchạy test suite thực tế không?"}
-        ToolVerify -- "KHÔNG CÓ (Nói suông)" --> DenyStop["EXIT 1: decision: deny / block: true\n(Từ chối kết thúc, ép phải chạy test thực tế)"]
-        ToolVerify -- "CÓ (Đã chạy test exit code 0)" --> AllowStop["decision: allow (Nghiệm thu báo cáo)"]
+        ToolVerify -- "KHÔNG CÓ (Nói suông)" --> DenyStop["decision: continue\n(Kèm reason: Ép phải chạy test thực tế)"]
+        ToolVerify -- "CÓ (Đã chạy test exit code 0)" --> AllowStop["decision: stop\n(Nghiệm thu đóng phiên an toàn)"]
     end
 ```
 

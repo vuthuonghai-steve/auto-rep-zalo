@@ -36,17 +36,9 @@ def verify_delegation_payload(tool_name: str, tool_args: Dict[str, Any]) -> Tupl
         else:
             tool_args = {}
 
-    # 1. Chặn tương tác đa lượt với Ephemeral Auditor (Chính sách bất đối xứng)
-    if tool_name == "send_message":
-        recipient = str(tool_args.get("Recipient") or tool_args.get("recipient") or "").strip().lower()
-        if "auditor" in recipient:
-            return (
-                False,
-                "[AUDITOR_IS_EPHEMERAL] CẤM dùng send_message với surgical-auditor. "
-                "Auditor là tác nhân One-Shot (Stateless Ephemeral). "
-                "Nếu task FAIL, hãy gửi <remediation_manifest> cho Builder, sau đó tạo Auditor mới bằng invoke_subagent sau khi Builder đã commit bản vá."
-            )
-
+    # 1. Kiểm soát tương tác với Auditor trong phiên kiểm toán bền vững (Persistent Verification Session)
+    # Auditor được phép nhận tin nhắn tái thẩm định (<remediation_manifest>) hoặc giao task mới (<task_delegation>).
+    # TUYỆT ĐỐI CẤM gửi văn xuôi tự do, tranh luận chủ quan tới Auditor.
     raw_text = str(
         tool_args.get("Prompt")
         or tool_args.get("prompt")
@@ -55,6 +47,19 @@ def verify_delegation_payload(tool_name: str, tool_args: Dict[str, Any]) -> Tupl
         or tool_args.get("raw_string")
         or ""
     )
+
+    if tool_name == "send_message":
+        recipient = str(tool_args.get("Recipient") or tool_args.get("recipient") or "").strip().lower()
+        if "auditor" in recipient:
+            has_remediation = "<remediation_manifest>" in raw_text and "</remediation_manifest>" in raw_text
+            has_delegation = "<task_delegation>" in raw_text and "</task_delegation>" in raw_text
+            if not has_remediation and not has_delegation:
+                return (
+                    False,
+                    "[AUDITOR_FREE_FORM_PROHIBITED] CẤM gửi văn bản tự do tới surgical-auditor. "
+                    "Trong phiên kiểm toán bền vững, Auditor chỉ tiếp nhận gói tin tái thẩm định đóng gói trong <remediation_manifest> "
+                    "hoặc chỉ thị kiểm toán mới trong <task_delegation>."
+                )
 
     # 2. Kiểm tra giới hạn tải trọng (CRIT-DEL-06: <= 2000 chars ~ 500 tokens)
     if len(raw_text) > 2000:
