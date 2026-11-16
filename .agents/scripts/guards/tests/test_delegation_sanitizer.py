@@ -5,6 +5,7 @@
 import os
 import sys
 import time
+import json
 import unittest
 
 # Đảm bảo đường dẫn import tương thích
@@ -61,6 +62,22 @@ allowed_files: ["src/bar.ts"]
 forbidden_files: ["src/baz.ts"]
 test_command: "bun test"
 </task_delegation>"""
+        }
+        ok, reason = verify_delegation_payload("send_message", payload)
+        self.assertTrue(ok, f"Expected PASS but got: {reason}")
+        self.assertEqual(reason, "OK")
+
+    def test_valid_completion_payload_send_message(self):
+        """Khung JSON Completion Payload hợp lệ gửi về Orchestrator qua send_message phải PASS."""
+        payload = {
+            "Recipient": "parent_conversation_orchestrator",
+            "Message": json.dumps({
+                "status": "SUCCESS",
+                "task_id": "T001",
+                "test_exit_code": 0,
+                "passed_assertions": 36,
+                "blast_radius_files": [".agents/agents/surgical-auditor/agent.md"]
+            })
         }
         ok, reason = verify_delegation_payload("send_message", payload)
         self.assertTrue(ok, f"Expected PASS but got: {reason}")

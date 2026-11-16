@@ -7,7 +7,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python scripts/guards/domains/engine_invariants/delegation_sanitizer.py",
+            "command": "python scripts/guards/dispatcher.py --event PreToolUse",
             "timeout": 5
           }
         ]

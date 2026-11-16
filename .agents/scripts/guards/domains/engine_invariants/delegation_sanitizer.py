@@ -83,14 +83,18 @@ def verify_delegation_payload(tool_name: str, tool_args: Dict[str, Any]) -> Tupl
                 "[DELEGATION_VIOLATION] Khung <task_delegation> thiếu thẻ đóng </task_delegation>."
             )
     elif tool_name == "send_message":
+        # Hỗ trợ cả 2 trường hợp:
+        # A) Orchestrator/Worker gửi message tái thẩm định / giao task (<remediation_manifest> / <task_delegation>)
+        # B) Subagent báo cáo hoàn thành về Orchestrator bằng JSON Completion Payload ("status": "SUCCESS" | "FAILURE" | "BLOCKED")
         has_remediation_open = "<remediation_manifest>" in raw_text
         has_delegation_open = "<task_delegation>" in raw_text
+        has_completion_payload = '"status"' in raw_text and ('"SUCCESS"' in raw_text or '"FAILURE"' in raw_text or '"BLOCKED"' in raw_text)
 
-        if not has_remediation_open and not has_delegation_open:
+        if not has_remediation_open and not has_delegation_open and not has_completion_payload:
             return (
                 False,
-                "[REMEDIATION_REQUIRED] Lệnh send_message gửi cho worker bắt buộc phải đóng gói trong khung <remediation_manifest>. "
-                "Cấm gửi văn xuôi giải thích chủ quan."
+                "[REMEDIATION_REQUIRED] Lệnh send_message gửi cho worker bắt buộc phải đóng gói trong khung <remediation_manifest> "
+                "hoặc JSON Completion Payload theo chuẩn. Cấm gửi văn xuôi giải thích chủ quan."
             )
         if has_remediation_open and "</remediation_manifest>" not in raw_text:
             return (
@@ -115,4 +119,53 @@ def verify_delegation_payload(tool_name: str, tool_args: Dict[str, Any]) -> Tupl
             )
 
     return True, "OK"
+
+
+if __name__ == "__main__":
+    import sys
+    # Hỗ trợ thực thi trực tiếp dạng CLI Hook khi nhận payload qua STDIN hoặc arg
+    raw_input_data = ""
+    if len(sys.argv) > 1:
+        raw_input_data = sys.argv[1]
+    elif not sys.stdin.isatty():
+        raw_input_data = sys.stdin.read()
+
+    input_payload = {}
+    if raw_input_data:
+        try:
+            input_payload = json.loads(raw_input_data.strip().lstrip("\ufeff"))
+        except Exception:
+            input_payload = {}
+
+    tool_call = input_payload.get("toolCall") or input_payload
+    tool_name = str(
+        tool_call.get("name")
+        or tool_call.get("tool_name")
+        or input_payload.get("tool_name")
+        or ""
+    )
+    raw_args = (
+        tool_call.get("args")
+        or tool_call.get("tool_args")
+        or input_payload.get("tool_args")
+        or {}
+    )
+
+    if isinstance(raw_args, str):
+        try:
+            tool_args = json.loads(raw_args)
+        except Exception:
+            tool_args = {"raw_string": raw_args}
+    elif isinstance(raw_args, dict):
+        tool_args = raw_args
+    else:
+        tool_args = {}
+
+    ok, reason = verify_delegation_payload(tool_name, tool_args)
+    if not ok:
+        print(json.dumps({"decision": "deny", "reason": reason}))
+    else:
+        print(json.dumps({"decision": "allow"}))
+    sys.exit(0)
+
 
