@@ -16,13 +16,13 @@
   },
   "workspace-safety-guard": {
     "enabled": true,
-    "PostToolUse": [
+    "PreToolUse": [
       {
         "matcher": "write_file|edit_file",
         "hooks": [
           {
             "type": "command",
-            "command": "python scripts/guards/workspace_guard.py",
+            "command": "python scripts/guards/dispatcher.py --event PreToolUse",
             "timeout": 5
           }
         ]
