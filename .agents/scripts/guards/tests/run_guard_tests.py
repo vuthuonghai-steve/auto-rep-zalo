@@ -213,6 +213,88 @@ def run_latency_benchmarks() -> List[Tuple[str, float, float, float, float, bool
             passed_h,
         ))
 
+        # 6. Benchmark PreToolUse Active Workspace Isolation (Feature 005)
+        clean_write_payload = {
+            "name": "write_file",
+            "args": {
+                "Path": "src/features/sample.py",
+                "Content": "def test(): pass\n"
+            }
+        }
+        dispatcher.handle_pre_tool_use(clean_write_payload)
+
+        ws_pre_timings = []
+        for _ in range(100):
+            t0 = time.perf_counter()
+            dispatcher.handle_pre_tool_use(clean_write_payload)
+            ws_pre_timings.append((time.perf_counter() - t0) * 1000.0)
+
+        mean_wp = statistics.mean(ws_pre_timings)
+        p95_wp = statistics.quantiles(ws_pre_timings, n=20)[18] if len(ws_pre_timings) >= 20 else max(ws_pre_timings)
+        max_wp = max(ws_pre_timings)
+        passed_wp = mean_wp < 15.0 and max_wp < 30.0
+        benchmark_results.append((
+            "PreToolUse Workspace Isolation Latency",
+            mean_wp,
+            p95_wp,
+            max_wp,
+            30.0,
+            passed_wp,
+        ))
+
+        # 7. Benchmark Completion Schema Validator (Feature 005)
+        from domains.engine_invariants.delegation_sanitizer import validate_completion_schema
+        comp_payload = {
+            "status": "SUCCESS",
+            "task_id": "T015",
+            "test_exit_code": 0,
+            "passed_assertions": 250,
+            "blast_radius_files": [".agents/scripts/guards/tests/run_guard_tests.py"]
+        }
+        validate_completion_schema(comp_payload)
+
+        val_timings = []
+        for _ in range(100):
+            t0 = time.perf_counter()
+            validate_completion_schema(comp_payload)
+            val_timings.append((time.perf_counter() - t0) * 1000.0)
+
+        mean_val = statistics.mean(val_timings)
+        p95_val = statistics.quantiles(val_timings, n=20)[18] if len(val_timings) >= 20 else max(val_timings)
+        max_val = max(val_timings)
+        passed_val = mean_val < 5.0
+        benchmark_results.append((
+            "Completion Schema Validator Latency",
+            mean_val,
+            p95_val,
+            max_val,
+            5.0,
+            passed_val,
+        ))
+
+        # 8. Benchmark Telemetry Audit Session Extraction (Feature 005)
+        import audit_session_logs
+        audit_session_logs.audit_session(dry_run=True)
+
+        aud_timings = []
+        for _ in range(100):
+            t0 = time.perf_counter()
+            audit_session_logs.audit_session(dry_run=True)
+            aud_timings.append((time.perf_counter() - t0) * 1000.0)
+
+        mean_aud = statistics.mean(aud_timings)
+        p95_aud = statistics.quantiles(aud_timings, n=20)[18] if len(aud_timings) >= 20 else max(aud_timings)
+        max_aud = max(aud_timings)
+        passed_aud = mean_aud < 10.0
+        benchmark_results.append((
+            "Telemetry Audit Session Extraction Latency",
+            mean_aud,
+            p95_aud,
+            max_aud,
+            10.0,
+            passed_aud,
+        ))
+
     except Exception as e:
         print(f"[WARN] Unable to execute micro-benchmarks: {e}")
 
