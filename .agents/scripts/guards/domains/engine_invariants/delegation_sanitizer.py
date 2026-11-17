@@ -17,6 +17,105 @@ COMPILED_BAIT_PATTERNS = [
     re.compile(p) for p in FORBIDDEN_BAIT_PATTERNS
 ]
 
+TASK_ID_PATTERN = re.compile(r"^T[0-9]{3}$")
+ALLOWED_COMPLETION_KEYS = {
+    "status",
+    "task_id",
+    "test_exit_code",
+    "passed_assertions",
+    "blast_radius_files",
+    "error_summary",
+    "error_message",
+}
+REQUIRED_COMPLETION_FIELDS = [
+    "status",
+    "task_id",
+    "test_exit_code",
+    "passed_assertions",
+    "blast_radius_files",
+]
+
+
+def validate_completion_schema(payload: Any) -> Tuple[bool, str]:
+    """
+    Xác thực payload của send_message đối chiếu với completion_payload.schema.json.
+    Quy tắc:
+    - Bắt buộc các trường: status, task_id, test_exit_code, passed_assertions, blast_radius_files.
+    - status thuộc ["SUCCESS", "FAILURE", "BLOCKED"].
+    - task_id khớp regex r"^T[0-9]{3}$".
+    - test_exit_code thuộc [0, 1].
+    - passed_assertions là integer >= 0.
+    - blast_radius_files là list of string, độ dài <= 3.
+    - error_summary / error_message (nếu có): string <= 120 ký tự.
+    - additionalProperties: false (không chứa thuộc tính ngoài).
+    Trả về: (True, "OK") hoặc (False, "[SCHEMA_VIOLATION] ...")
+    """
+    if isinstance(payload, str):
+        try:
+            parsed = json.loads(payload)
+            if isinstance(parsed, str):
+                parsed = json.loads(parsed)
+            payload = parsed
+        except Exception:
+            return False, "[SCHEMA_VIOLATION] Payload phải là một đối tượng JSON (dictionary)"
+
+    if not isinstance(payload, dict):
+        return False, "[SCHEMA_VIOLATION] Payload phải là một đối tượng JSON (dictionary)"
+
+    # 1. Kiểm tra trường bắt buộc
+    for field in REQUIRED_COMPLETION_FIELDS:
+        if field not in payload:
+            return False, f"[SCHEMA_VIOLATION] Thiếu trường bắt buộc '{field}'"
+
+    # 2. Kiểm tra thuộc tính lạ (additionalProperties: false)
+    for key in payload:
+        if key not in ALLOWED_COMPLETION_KEYS:
+            return False, f"[SCHEMA_VIOLATION] Phát hiện thuộc tính không được phép '{key}'"
+
+    # 3. Kiểm định kiểu dữ liệu và ràng buộc từng trường
+    # status: enum ["SUCCESS", "FAILURE", "BLOCKED"]
+    status_val = payload["status"]
+    if not isinstance(status_val, str) or status_val not in ("SUCCESS", "FAILURE", "BLOCKED"):
+        return False, "[SCHEMA_VIOLATION] Trường 'status' phải thuộc ['SUCCESS', 'FAILURE', 'BLOCKED']"
+
+    # task_id: pattern ^T[0-9]{3}$
+    task_id_val = payload["task_id"]
+    if not isinstance(task_id_val, str) or not TASK_ID_PATTERN.match(task_id_val):
+        return False, "[SCHEMA_VIOLATION] Trường 'task_id' không khớp mẫu '^T[0-9]{3}$'"
+
+    # test_exit_code: integer enum [0, 1] (chống bool vì bool kế thừa int trong Python)
+    test_exit_code_val = payload["test_exit_code"]
+    if isinstance(test_exit_code_val, bool) or not isinstance(test_exit_code_val, int) or test_exit_code_val not in (0, 1):
+        return False, "[SCHEMA_VIOLATION] Trường 'test_exit_code' phải là 0 hoặc 1"
+
+    # passed_assertions: integer >= 0
+    passed_assertions_val = payload["passed_assertions"]
+    if isinstance(passed_assertions_val, bool) or not isinstance(passed_assertions_val, int) or passed_assertions_val < 0:
+        return False, "[SCHEMA_VIOLATION] Trường 'passed_assertions' phải là số nguyên >= 0"
+
+    # blast_radius_files: array of strings, maxItems 3
+    blast_radius_val = payload["blast_radius_files"]
+    if not isinstance(blast_radius_val, list):
+        return False, "[SCHEMA_VIOLATION] Trường 'blast_radius_files' phải là danh sách chuỗi đường dẫn tệp"
+    if len(blast_radius_val) > 3:
+        return False, "[SCHEMA_VIOLATION] Số lượng tệp thay đổi vượt quá giới hạn tối đa 3 tệp"
+    for item in blast_radius_val:
+        if not isinstance(item, str):
+            return False, "[SCHEMA_VIOLATION] Trường 'blast_radius_files' phải là danh sách chuỗi đường dẫn tệp"
+
+    # error_summary / error_message (optional): string maxLength 120
+    if "error_summary" in payload:
+        error_summary_val = payload["error_summary"]
+        if not isinstance(error_summary_val, str) or len(error_summary_val) > 120:
+            return False, "[SCHEMA_VIOLATION] Trường 'error_summary' không được vượt quá 120 ký tự"
+
+    if "error_message" in payload:
+        error_message_val = payload["error_message"]
+        if not isinstance(error_message_val, str) or len(error_message_val) > 120:
+            return False, "[SCHEMA_VIOLATION] Trường 'error_message' không được vượt quá 120 ký tự"
+
+    return True, "OK"
+
 
 def verify_delegation_payload(tool_name: str, tool_args: Dict[str, Any]) -> Tuple[bool, str]:
     """
@@ -85,17 +184,38 @@ def verify_delegation_payload(tool_name: str, tool_args: Dict[str, Any]) -> Tupl
     elif tool_name == "send_message":
         # Hỗ trợ cả 2 trường hợp:
         # A) Orchestrator/Worker gửi message tái thẩm định / giao task (<remediation_manifest> / <task_delegation>)
-        # B) Subagent báo cáo hoàn thành về Orchestrator bằng JSON Completion Payload ("status": "SUCCESS" | "FAILURE" | "BLOCKED")
+        # B) Subagent báo cáo hoàn thành về Orchestrator bằng JSON Completion Payload
         has_remediation_open = "<remediation_manifest>" in raw_text
         has_delegation_open = "<task_delegation>" in raw_text
-        has_completion_payload = '"status"' in raw_text and ('"SUCCESS"' in raw_text or '"FAILURE"' in raw_text or '"BLOCKED"' in raw_text)
 
-        if not has_remediation_open and not has_delegation_open and not has_completion_payload:
+        # Phát hiện và trích xuất JSON completion payload
+        completion_dict = None
+        if raw_text:
+            text_stripped = raw_text.strip()
+            if text_stripped.startswith("{") and text_stripped.endswith("}"):
+                try:
+                    parsed = json.loads(text_stripped)
+                    if isinstance(parsed, str):
+                        parsed = json.loads(parsed)
+                    if isinstance(parsed, dict):
+                        completion_dict = parsed
+                except Exception:
+                    pass
+        if completion_dict is None and isinstance(tool_args, dict):
+            if any(k in tool_args for k in ("status", "task_id", "test_exit_code", "passed_assertions", "blast_radius_files")):
+                completion_dict = tool_args
+
+        if completion_dict is not None:
+            ok_schema, reason_schema = validate_completion_schema(completion_dict)
+            if not ok_schema:
+                return False, reason_schema
+        elif not has_remediation_open and not has_delegation_open:
             return (
                 False,
                 "[REMEDIATION_REQUIRED] Lệnh send_message gửi cho worker bắt buộc phải đóng gói trong khung <remediation_manifest> "
                 "hoặc JSON Completion Payload theo chuẩn. Cấm gửi văn xuôi giải thích chủ quan."
             )
+
         if has_remediation_open and "</remediation_manifest>" not in raw_text:
             return (
                 False,
@@ -150,6 +270,10 @@ if __name__ == "__main__":
         or input_payload.get("tool_args")
         or {}
     )
+
+    if not tool_name and any(k in input_payload for k in ("status", "task_id", "test_exit_code", "passed_assertions", "blast_radius_files")):
+        tool_name = "send_message"
+        raw_args = input_payload
 
     if isinstance(raw_args, str):
         try:
