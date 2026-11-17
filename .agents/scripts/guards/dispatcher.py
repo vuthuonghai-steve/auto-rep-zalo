@@ -17,6 +17,7 @@ from domains.engine_invariants.delegation_sanitizer import (
     verify_delegation_payload,
     validate_completion_schema,
 )
+from workspace_guard import check_pre_tool_workspace_safety
 
 
 def parse_input(raw_payload: str = None) -> Dict[str, Any]:
@@ -126,6 +127,29 @@ def handle_pre_tool_use(payload: Dict[str, Any]) -> Dict[str, Any]:
             return {
                 "decision": "deny",
                 "reason": reason
+            }
+
+    # 2. Tầng kiểm soát ranh giới workspace cho write_file và edit_file
+    if tool_name in ("write_file", "edit_file"):
+        workspace_paths = payload.get("workspacePaths") or (
+            payload.get("toolCall", {}).get("workspacePaths")
+            if isinstance(payload.get("toolCall"), dict)
+            else None
+        )
+        workspace_root = (
+            workspace_paths[0]
+            if isinstance(workspace_paths, list) and workspace_paths and workspace_paths[0]
+            else None
+        )
+        ok_workspace, workspace_reason = check_pre_tool_workspace_safety(
+            tool_name=tool_name,
+            tool_args=tool_args,
+            workspace_root=workspace_root,
+        )
+        if not ok_workspace:
+            return {
+                "decision": "deny",
+                "reason": workspace_reason,
             }
 
     # Cho phép thực thi mặc định nếu không vi phạm
