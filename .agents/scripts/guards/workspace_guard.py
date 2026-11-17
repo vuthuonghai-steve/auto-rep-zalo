@@ -60,7 +60,10 @@ def check_diff_scope(file_path: str, workspace_root: str) -> Tuple[bool, str]:
     if "forbidden" in path_segments:
         return False, f"Đường dẫn thuộc phạm vi cấm (forbidden path): {file_path}"
 
-    full_target = os.path.abspath(file_path)
+    if not os.path.isabs(file_path):
+        full_target = os.path.abspath(os.path.join(workspace_root, file_path))
+    else:
+        full_target = os.path.abspath(file_path)
     normalized_workspace = os.path.abspath(workspace_root)
 
     try:
@@ -70,6 +73,60 @@ def check_diff_scope(file_path: str, workspace_root: str) -> Tuple[bool, str]:
     except Exception:
         # Trong trường hợp khác ổ đĩa trên Windows
         return False, f"File nằm ngoài ổ đĩa workspace: {full_target}"
+
+    return True, "OK"
+
+
+def check_pre_tool_workspace_safety(
+    tool_name: str,
+    tool_args: Dict[str, Any],
+    workspace_root: Optional[str] = None,
+) -> Tuple[bool, str]:
+    """
+    Kiểm tra ranh giới đường dẫn trước khi thực thi công cụ ghi/sửa tệp (PreToolUse Active Deny).
+    Được gọi tại dispatcher.py trong sự kiện PreToolUse cho write_file và edit_file.
+
+    Quy tắc:
+    1. Chỉ kiểm tra các công cụ tác động tệp (write_file, edit_file).
+    2. Trích xuất target_path từ tool_args (hỗ trợ Path, path, targetPath, target_path).
+    3. Ngăn chặn đường dẫn cấm ('forbidden') hoặc path traversal ra ngoài workspace_root.
+
+    Trả về:
+    - (True, "OK") nếu an toàn hoặc công cụ không thuộc diện kiểm tra.
+    - (False, "[WORKSPACE_VIOLATION] ...") nếu phát hiện vi phạm ranh giới.
+    """
+    norm_tool = str(tool_name or "").strip().lower()
+    if norm_tool not in ("write_file", "edit_file"):
+        return True, "OK"
+
+    if isinstance(tool_args, str):
+        try:
+            import json
+            tool_args = json.loads(tool_args)
+        except Exception:
+            tool_args = {}
+
+    if not isinstance(tool_args, dict):
+        return True, "OK"
+
+    target_path = str(
+        tool_args.get("Path")
+        or tool_args.get("path")
+        or tool_args.get("targetPath")
+        or tool_args.get("target_path")
+        or tool_args.get("filePath")
+        or tool_args.get("file_path")
+        or ""
+    ).strip()
+
+    if not target_path:
+        return True, "OK"
+
+    effective_root = str(workspace_root).strip() if workspace_root else get_workspace_root()
+
+    in_scope, reason = check_diff_scope(target_path, effective_root)
+    if not in_scope:
+        return False, f"[WORKSPACE_VIOLATION] {reason}"
 
     return True, "OK"
 
