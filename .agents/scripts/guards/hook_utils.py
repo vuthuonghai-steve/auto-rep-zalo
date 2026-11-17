@@ -13,10 +13,13 @@ Các chức năng cốt lõi:
 
 import os
 import sys
+import re
 import json
 import time
 from datetime import datetime
 from typing import Dict, Any, Tuple, Optional, Union
+
+SCHEMA_VIOLATION_CODE = "[SCHEMA_VIOLATION]"
 
 
 def get_repo_root() -> str:
@@ -141,6 +144,7 @@ def record_footprint(
     duration_ms: float = 0.0,
     details: Optional[Dict[str, Any]] = None,
     log_path: Optional[str] = None,
+    error_code: Optional[str] = None,
 ) -> bool:
     """
     Ghi một bản ghi nhật ký vết vi mô vào tệp .agents/logs/guard-footprints.jsonl.
@@ -152,11 +156,24 @@ def record_footprint(
     - status: Trạng thái thẩm định (CLEAN, FLAGGED_PLACEHOLDER, ALLOW, DENY, etc.).
     - durationMs: Thời gian thực thi (số thực/nguyên tính bằng ms).
     - target: Đối tượng kiểm tra (đường dẫn tệp hoặc tên tool), có thể là None.
-    - details: Chi tiết bổ sung (dict).
+    - details: Chi tiết bổ sung (dict), bao gồm chuẩn hóa error_code nếu có vi phạm.
 
     Phòng thủ: Không bao giờ làm crash chương trình gọi nếu phát sinh lỗi I/O.
     """
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+    footprint_details = dict(details) if isinstance(details, dict) else {}
+
+    # Chuẩn hóa việc ghi nhận mã lỗi vi phạm schema [SCHEMA_VIOLATION] hoặc mã lỗi khác vào details
+    if error_code:
+        footprint_details["error_code"] = str(error_code)
+    elif "error_code" not in footprint_details:
+        check_text = str(footprint_details.get("reason") or status or "")
+        match = re.search(r"(\[[A-Z0-9_]+\])", check_text)
+        if match:
+            footprint_details["error_code"] = match.group(1)
+        elif status == "SCHEMA_VIOLATION":
+            footprint_details["error_code"] = SCHEMA_VIOLATION_CODE
+
     record = {
         "timestamp": now_str,
         "guard": str(guard_name),
@@ -164,7 +181,7 @@ def record_footprint(
         "status": str(status),
         "target": str(target) if target is not None else None,
         "durationMs": round(float(duration_ms), 2),
-        "details": details if isinstance(details, dict) else {},
+        "details": footprint_details,
     }
 
     effective_path = log_path or get_default_log_path()
@@ -181,6 +198,34 @@ def record_footprint(
         # Ghi cảnh báo ra stderr mà không raise exception
         sys.stderr.write(f"[FOOTPRINT_LOG_ERROR] Không thể ghi footprint vào {effective_path}: {exc}\n")
         return False
+
+
+def record_schema_violation_footprint(
+    guard_name: str = "delegation_sanitizer",
+    reason: str = "[SCHEMA_VIOLATION] Payload vi phạm JSON Schema",
+    target: Optional[str] = "send_message",
+    duration_ms: float = 0.0,
+    details: Optional[Dict[str, Any]] = None,
+    log_path: Optional[str] = None,
+) -> bool:
+    """
+    Chuẩn hóa việc ghi nhận mã lỗi vi phạm schema [SCHEMA_VIOLATION] vào vết nhật ký footprint.
+    Đảm bảo details chứa error_code: '[SCHEMA_VIOLATION]' và reason chuẩn mực.
+    """
+    footprint_details = dict(details) if isinstance(details, dict) else {}
+    footprint_details["error_code"] = SCHEMA_VIOLATION_CODE
+    footprint_details["reason"] = str(reason)
+
+    return record_footprint(
+        guard_name=guard_name,
+        event="PreToolUse",
+        status="DENY",
+        target=target,
+        duration_ms=duration_ms,
+        details=footprint_details,
+        log_path=log_path,
+        error_code=SCHEMA_VIOLATION_CODE,
+    )
 
 
 def format_hook_response(decision: str, reason: Optional[str] = None, **kwargs) -> Dict[str, Any]:
