@@ -13,7 +13,10 @@ from typing import Dict, Any, Callable, Tuple
 
 # Nạp các module miền kiểm dịch
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
-from domains.engine_invariants.delegation_sanitizer import verify_delegation_payload
+from domains.engine_invariants.delegation_sanitizer import (
+    verify_delegation_payload,
+    validate_completion_schema,
+)
 
 
 def parse_input(raw_payload: str = None) -> Dict[str, Any]:
@@ -73,6 +76,10 @@ def extract_tool_call_info(payload: Dict[str, Any]) -> Tuple[str, Dict[str, Any]
     else:
         tool_args = {}
 
+    if not tool_name and any(k in payload for k in ("status", "task_id", "test_exit_code", "passed_assertions", "blast_radius_files")):
+        tool_name = "send_message"
+        tool_args = payload
+
     return str(tool_name), tool_args
 
 
@@ -85,6 +92,35 @@ def handle_pre_tool_use(payload: Dict[str, Any]) -> Dict[str, Any]:
 
     # 1. Tầng kiểm dịch liên tác tử (engine invariants) cho invoke_subagent và send_message
     if tool_name in ("invoke_subagent", "send_message"):
+        # Với send_message: kiểm định schema completion payload nếu phát hiện cấu trúc bàn giao
+        if tool_name == "send_message":
+            msg_content = tool_args.get("Message") or tool_args.get("message")
+            completion_payload = None
+            if isinstance(msg_content, dict):
+                completion_payload = msg_content
+                tool_args["Message"] = json.dumps(msg_content)
+            elif isinstance(msg_content, str):
+                text_stripped = msg_content.strip()
+                if text_stripped.startswith("{") and text_stripped.endswith("}"):
+                    try:
+                        parsed = json.loads(text_stripped)
+                        if isinstance(parsed, str):
+                            parsed = json.loads(parsed)
+                        if isinstance(parsed, dict):
+                            completion_payload = parsed
+                    except Exception:
+                        pass
+            elif any(k in tool_args for k in ("status", "task_id", "test_exit_code", "passed_assertions", "blast_radius_files")):
+                completion_payload = tool_args
+
+            if completion_payload is not None:
+                ok_schema, schema_reason = validate_completion_schema(completion_payload)
+                if not ok_schema:
+                    return {
+                        "decision": "deny",
+                        "reason": schema_reason
+                    }
+
         ok, reason = verify_delegation_payload(tool_name, tool_args)
         if not ok:
             return {
